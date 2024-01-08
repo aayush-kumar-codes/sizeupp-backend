@@ -16,8 +16,17 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, permission_classes,authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
+import random
+import nltk
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
+import spacy
+from spacy.matcher import PhraseMatcher
+from django.db.models import Q
 
-
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
+from django.db.models import Q
+from spacy.matcher import PhraseMatcher
 # get cart itms and wishlist items -----------------------
 
 
@@ -29,24 +38,25 @@ def productfilter(request):
     category = request.data.get('category', None)
     sub_category = request.data.get('sub_category', None)
     sub_sub_category = request.data.get('sub_sub_category',None)
-    colorfamily = request.data.get('colorfamily', None)
+    colorfamily = request.data.get('color', None)
     search = request.data.get('search', None)
     fit =request.data.get('fit', None)
     design=request.data.get('design', None)
+    sleeve = request.data.get('sleeve',None)
+    necktype = request.data.get('necktype',None)
+    
     size =  request.data.get('size', None)
-    products = Product.objects.all()
-
-    if search:
-        products = Product.objects.filter(
-             Q(name__exact=search) |
-        Q(sleeve__exact=search) |
-        Q(design_surface__exact=search) |
-        Q(fit__exact=search) |
-        Q(neck_type__exact=search) |
-        Q(occasion__exact=search) |
-        Q(fabric_detail__exact=search)
-        )
-        return Response({'products': product_serializer(products, many=True).data}, status=status.HTTP_200_OK)
+    # prict_lth =request.data.get('prict_lth', None)
+    # prict_htl =request.data.get('prict_htl', None)
+    
+    
+    products = Product.objects.all().order_by('?')
+    
+    
+    
+    
+    
+        
     
     if category:
         products = products.filter(category__id__in=category)
@@ -58,9 +68,124 @@ def productfilter(request):
         products = products.filter(subsubcategory__id__in = sub_sub_category)
     
     if colorfamily:
-        products = products.filter(color_family__id__in=colorfamily)     
-       
-    return Response({'products': product_serializer(products, many=True).data}, status=status.HTTP_200_OK)
+        products = products.filter(color_family__name__in=colorfamily)    
+        
+    if fit:
+        products = products.filter(fit__in=fit)
+    
+    if design:
+        products = products.filter(design__in=design)
+    
+    if size:
+        products = products.filter(sqp__size__in=str(size))
+    
+    if sleeve:
+        products = products.filter(sleeve__in=sleeve)
+    
+    if necktype:
+        products = products.filter(neck_type__in=necktype)
+
+    # if search:
+    #     nlp = spacy.load("en_core_web_sm")
+
+    #     # Define a list of categories to match
+    #     categories = [cat.name for cat in ProductCategory.objects.all().distinct()]
+    #     subcategories = [subcat.name for subcat in ProductSubCategory.objects.all().distinct()]
+    #     subsubcategories = [subsubcat.name for subsubcat in ProductSubSubCategory.objects.all().distinct()]
+
+    #     category_matcher = PhraseMatcher(nlp.vocab)
+    #     subcategory_matcher = PhraseMatcher(nlp.vocab)
+    #     subsubcategory_matcher = PhraseMatcher(nlp.vocab)
+
+    #     # Initialize the PhraseMatcher
+    #     category_patterns = [nlp(category.lower()) for category in categories]
+    #     subcategory_patterns = [nlp(subcategory.lower()) for subcategory in subcategories]
+    #     subsubcategory_patterns = [nlp(subsubcategory.lower()) for subsubcategory in subsubcategories]
+
+    #     category_matcher.add("Categories", None, *category_patterns)
+    #     subcategory_matcher.add("Subcategories", None, *subcategory_patterns)
+    #     subsubcategory_matcher.add("Subsubcategories", None, *subsubcategory_patterns)
+
+    #     # Process the search query with spaCy
+    #     doc = nlp(search.lower())
+
+    #     # Use the matchers to find matches in the document
+    #     category_matches = category_matcher(doc)
+    #     subcategory_matches = subcategory_matcher(doc)
+    #     subsubcategory_matches = subsubcategory_matcher(doc)
+
+    #     # Extract relevant categories, subcategories, and subsubcategories from the query
+    #     relevant_categories = [doc[start:end].text for _, start, end in category_matches]
+    #     relevant_subcategories = [doc[start:end].text for _, start, end in subcategory_matches]
+    #     relevant_subsubcategories = [doc[start:end].text for _, start, end in subsubcategory_matches]
+
+    #     # Filter products based on relevant categories, subcategories, and subsubcategories
+    #     for category in relevant_categories:
+    #         products = products.filter(
+    #             Q(name__icontains=category) |
+    #             Q(subcategory__name__icontains=category) |
+    #             Q(subsubcategory__name__icontains=category) |
+    #             Q(sleeve__icontains=category) |
+    #             Q(design_surface__icontains=category) |
+    #             Q(fit__icontains=category) |
+    #             Q(neck_type__icontains=category) |
+    #             Q(occasion__icontains=category) |
+    #             Q(color__icontains=category) |
+    #             Q(fabric_detail__icontains=category) |
+    #             Q(meta_tags__icontains=category)
+    #         )
+
+    #     for subcategory in relevant_subcategories:
+    #         products = products.filter(
+    #             Q(name__icontains=subcategory) |
+    #             Q(subcategory__name__icontains=subcategory) |
+    #             Q(subsubcategory__name__icontains=subcategory) |
+    #             Q(sleeve__icontains=subcategory) |
+    #             Q(design_surface__icontains=subcategory) |
+    #             Q(fit__icontains=subcategory) |
+    #             Q(neck_type__icontains=subcategory) |
+    #             Q(occasion__icontains=subcategory) |
+    #             Q(color__icontains=subcategory) |
+    #             Q(fabric_detail__icontains=subcategory) |
+    #             Q(meta_tags__icontains=subcategory)
+    #         )
+
+    #     for subsubcategory in relevant_subsubcategories:
+    #         products = products.filter(
+               
+    #             Q(subsubcategory__name__icontains=subsubcategory) |
+    #             Q(sleeve__icontains=subsubcategory) |
+    #             Q(design_surface__icontains=subsubcategory) |
+    #             Q(fit__icontains=subsubcategory) |
+    #             Q(neck_type__icontains=subsubcategory) |
+    #             Q(occasion__icontains=subsubcategory) |
+    #             Q(color__icontains=subsubcategory) |
+    #             Q(fabric_detail__icontains=subsubcategory) |
+    #             Q(meta_tags__icontains=subsubcategory)
+    #         )
+    
+    
+    if search:
+        products = products.filter(Q(meta_tags__icontains=search))
+    
+    
+    pro_list = product_serializer(products, many=True).data
+    if request.user.is_authenticated:
+            cart = Cart.objects.filter(user=request.user)
+            cart_products = [product_c.product.id for product_c in cart]
+
+            wishlist = WishList.objects.filter(user=request.user)
+            wishlist_products = [product_i.product.id for product_i in wishlist]
+
+            for pro in pro_list:
+                pro_id = pro.get('id', None)
+
+                if pro_id is not None:
+                    pro['cart'] = pro_id in cart_products
+                    pro['wishlist'] = pro_id in wishlist_products
+                
+                
+    return Response({'products': pro_list}, status=status.HTTP_200_OK)
 
 
 
@@ -205,6 +330,12 @@ def cat_list(request):
 @api_view(['GET'])
 def discountevents(request):
     events = DiscountEventsSerialize(DiscountEvents.objects.order_by('-id').all(),many=True).data
+    return Response({'events':events},status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def discount_coupon(request):
+    events = DiscountCouponSerializers(DiscountCoupon.objects.order_by('-id').all(),many=True).data
     return Response({'events':events},status=status.HTTP_200_OK)
 
 

@@ -33,19 +33,7 @@ from rest_framework.authentication import TokenAuthentication
 from .serializer import *
 from SizeUpp import settings
 from datetime import datetime
-url = 'https://api.instashipin.com/api/v1/tenancy/authToken'
-payload ={
-    "api_key": 
-        "6092655223372029e7404dc4"
-    }
-headers = {
-        'Content-Type': 'application/json',
-    }
-response = requests.post(url, json=payload, headers=headers)
-if response.status_code == 200:
-        data = response.json()
-        token = data['data']['response']['token_id']    
-        settings.SHIPING_TOKEN = token
+from .deliveryApi import *
 
 @api_view(['GET'])
 def banner_scrolling(request):
@@ -54,34 +42,22 @@ def banner_scrolling(request):
 
 
 
-def checkDelivery(pincode): 
-        
-    url = 'https://api.instashipin.com/api/v1/courier-vendor/freight-calculator'
-    payload = {
-        "token_id": settings.SHIPING_TOKEN,
-        "fm_pincode": "400072",
-        "lm_pincode": pincode,
-        "weight": "0.5",
-        "payType": "PPD",
-        "collectable": ""
-    }
-
-    response = requests.post(url, json=payload, headers=headers)
-
-    if response.status_code == 200:
-        # Request was successful
-        data = response.json()
-        deliveryCharges = data['data']['response']['total_freight']
-        return deliveryCharges
-    else:
-        return None
-
-
-
-
 @api_view(['GET'])
 def validate_pincode(request,slug):
-    
+    url = 'https://api.instashipin.com/api/v1/tenancy/authToken'
+    payload ={
+        "api_key": 
+            "6092655223372029e7404dc4"
+        }
+    headers = {
+            'Content-Type': 'application/json',
+        }
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+            data = response.json()
+            token = data['data']['response']['token_id']    
+            settings.SHIPING_TOKEN = token
+
         
     url = 'https://api.instashipin.com/api/v1/courier-vendor/check-pincode'
 
@@ -101,97 +77,8 @@ def validate_pincode(request,slug):
 
 
 
-def placeDelivery(order_id):
-    order = Order.objects.get(id=order_id)
-    url = 'https://api.instashipin.com/api/v1/courier-vendor/external-book'
-    total_weight = 0
-    items = []
-
-    for orderitem in order.order_items.all():
-        sqp = SizeQuantityPrice.objects.get(id=orderitem.sqp_code)
-        total_weight = round(total_weight + float(sqp.weight), 2)
-        items.append(
-            {
-                "name": orderitem.product.name,
-                "quantity": orderitem.quantity,
-                "sku": orderitem.sqp_code,
-                "unit_price": str(orderitem.mrp),  # Convert Decimal to string
-                "actual_weight": str(orderitem.size),  # Convert Decimal to string
-                "item_color": "",
-                "item_size": str(orderitem.size),  # Convert Decimal to string
-                "item_category": "",
-                "item_image": "",
-                "item_brand": ""
-            }
-        )
-
-    payload = {
-        "token_id": settings.SHIPING_TOKEN,
-        "auto_approve": "true",
-        "order_number": str(order.id),
-        "payment_method": order.payment_type,
-        "discount_total": 0.00,
-        "cod_shipping_charge": 00.00,
-        "invoice_total": float(order.payment_amount),  # Convert Decimal to string
-        "cod_total": float(order.payment_amount),  # Convert Decimal to string
-        "actual_weight": round(float(total_weight),2),
-        "volumetric_weight": 0.50,
-        "shipping": {
-            "first_name": order.customer_name,
-            "address_1": order.address_line_1,
-            "address_2": order.address_line_2,
-            "city": order.city,
-            "state": order.state,
-            "postcode": int(order.postal_code),
-            "country": "India",
-            "phone": int(order.customer_contact),
-            "cust_email": order.customer_email
-        },
-        "line_items": items,
-        "pickup": {
-            "vendor_name": "Test Vendor",
-            "address_1": "Demo Address, do not pick",
-            "address_2": "",
-            "city": "Gurgaon",
-            "state": "Haryana",
-            "postcode":122016,
-            "country": "India",
-            "phone": 8104739401
-        },
-        "rto": {
-            "vendor_name": "Test Vendor",
-            "address_1": "Do not pick",
-            "address_2": " ",
-            "city": "Gurgaon",
-            "state": "Haryana",
-            "postcode": "122016",
-            "country": "India",
-            "phone": "8104739401"
-        },
-        "gst_details": {
-            "gst_number": "",
-            "cgst": "",
-            "igst": "",
-            "sgst": "",
-            "hsn_number": "",
-            "ewaybill_number": ""
-        }
-    }
-
-    response = requests.post(url, json=payload, headers=headers)
-
-    if response.status_code == 200:
-        # Request was successful
-        data = response.json()
-        
-        # airwaybilno = data['data']['response']['airwaybilno']
-        # courier = data['data']['response']['courier']
-        # dispatch_label_url = data['data']['response']['dispatch_label_url']
-        # return airwaybilno,courier,dispatch_label_url
-        return data
-    
-    
-    
+ 
+            
 @api_view(['GET','POST'])
 def home(request):
     if request.method == 'POST':
@@ -200,7 +87,7 @@ def home(request):
             
             if request.user.newsletter == True:
                 message='Already Subscribed to Newsletter!!'
-                return Response({'message':message},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message':message},status=status.HTTP_502_BAD_GATEWAY)
 
             elif request.user.email == email:
                 user = User.objects.get(email=email)
@@ -212,7 +99,7 @@ def home(request):
 
             elif Newsletter.objects.filter(email=email).exists():
                             message='Already Subscribed to Newsletter !!'
-                            return Response({'message':message},status=status.HTTP_400_BAD_REQUEST)
+                            return Response({'message':message},status=status.HTTP_502_BAD_GATEWAY)
 
             else:
                 Newsletter.objects.create(email=email).save()
@@ -245,7 +132,7 @@ def home(request):
         'img':HomeBannerImages.objects.first(),
         'images':HomeBannerScrolling.objects.all(),
         'products':products,
-        'sale_on_product':sale_on_product,
+        # 'sale_on_product':sale_on_product,
         'top_selling_products':top_selling_products
     }
     return Response( cntx,status=status.HTTP_200_OK)
@@ -253,15 +140,16 @@ def home(request):
 
 
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
+# @authentication_classes([TokenAuthentication])
+# @permission_classes([IsAuthenticated])
 def validate_token(request):
     token = request.data.get('token')
-    if Token.objects.filter(token = token).exists():
-        
+    if Token.objects.filter(key = token).exists():    
         return Response({'message':'Token Accepted'},status=status.HTTP_200_OK)
     else:
-        return Response({'message':"Invalid Token"},status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message':"Invalid Token"},status=status.HTTP_502_BAD_GATEWAY)
+
+
 @csrf_protect
 @api_view(['POST'])
 def signup(request):
@@ -313,6 +201,7 @@ def signup(request):
 
             login(request, user)
 
+            # send_welcome_email(user)
             token, created = Token.objects.get_or_create(user=user)
             # send_welcome_email(user)
             return Response({
@@ -322,7 +211,7 @@ def signup(request):
                     }, status=status.HTTP_200_OK)
 
         else:
-            return Response( status=status.HTTP_400_BAD_REQUEST)
+            return Response( status=status.HTTP_502_BAD_GATEWAY)
         
         
 
@@ -361,10 +250,10 @@ def signin(request):
                         'token': token.key,  # Include the token in the response
                     }, status=status.HTTP_200_OK)
                 else:
-                        return Response({'message': 'Invalid Password.'}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({'message': 'Invalid Password.'}, status=status.HTTP_502_BAD_GATEWAY)
             except:
                         
-                        return Response({'message': 'Email Not Exist.'}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({'message': 'Email Not Exist.'}, status=status.HTTP_502_BAD_GATEWAY)
       
 
 
@@ -382,7 +271,7 @@ def signin(request):
 #         else:
 #             # Handle the case where the user does not exist
 #             message='Email Not Exist!!'
-#             return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+#             return Response({'message': message}, status=status.HTTP_502_BAD_GATEWAY)
      
 #     # If it's a GET request, render the empty form
 
@@ -416,7 +305,7 @@ def otp(request):
                             
             else:
                 message="OTP Invalid"
-                return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': message}, status=status.HTTP_502_BAD_GATEWAY)
             
         if request.method == 'GET':  
             # if user.otp == '':
@@ -439,7 +328,7 @@ def otp_forgot_pass(request):
             if User.objects.filter(email=email).exists():
                 user = User.objects.get(email=email)
             else:
-                return Response({'message':'Email not  resgister !'},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message':'Email not  resgister !'},status=status.HTTP_502_BAD_GATEWAY)
             
             
             otp = request.data.get('otp')
@@ -456,7 +345,7 @@ def otp_forgot_pass(request):
                             
                 else:
                     message="OTP Invalid"
-                    return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'message': message}, status=status.HTTP_502_BAD_GATEWAY)
             
             
             else:           
@@ -474,7 +363,7 @@ def otp_forgot_pass(request):
 @permission_classes([IsAuthenticated])
 def userprofile(request):
     if not request.user.is_authenticated:
-        return Response({'message':'Login Required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message':'Login Required'}, status=status.HTTP_502_BAD_GATEWAY)
     
     elif not request.user.is_verified :
             return Response({'message':'Email Not Verified','user_verified':request.user.is_verified}, status=status.HTTP_203_NON_AUTHORITATIVE_INFORMATION)
@@ -496,7 +385,7 @@ def userprofile(request):
 def address(request):
     user = User.objects.get(email=request.user.email)
     if not request.user.is_authenticated:
-        return Response({'message':'Login Required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message':'Login Required'}, status=status.HTTP_502_BAD_GATEWAY)
     
     elif not user.is_verified :
             return Response({'message':'Email Not Verified','user_verified':user.is_verified}, status=status.HTTP_203_NON_AUTHORITATIVE_INFORMATION)
@@ -510,14 +399,9 @@ def address(request):
             postal_code = request.data.get('postal_code')
             country = request.data.get('country','India')
             state = request.data.get('state')
-            is_default = request.data.get('is_default')
-            if is_default == "on":
-                    is_default = True
-            else:
-                    is_default = False
-
+         
             addresses = Address.objects.filter(user=request.user)
-            if is_default == True and addresses:
+            if addresses:
                 for address in addresses:
                     address.is_default = False
                     address.save()
@@ -531,7 +415,7 @@ def address(request):
                 postal_code = postal_code,
                 country = country,
                 state = state,
-                is_default = is_default,
+                is_default = True,
             )
             address.save()
             message= "Address Added Successfully"
@@ -561,19 +445,14 @@ def address_by_id(request,slug):
                 city = request.data.get('city')
                 country = request.data.get('country')
                 postal_code = request.data.get('postal_code')
-                is_default = request.data.get('is_default',"on")
                 
-                if is_default == "on":
-                    is_default = True
-                else:
-                    is_default = False
                 address = Address.objects.get(id=address_id)
                
                 addresses = Address.objects.filter(user=request.user)
-                if is_default == True and addresses:
-                    for old_address in addresses:
+                for old_address in addresses:
                         old_address.is_default = False
                         old_address.save()
+                        
                 if address_line_1:
                     
                     address.address_line_1 = address_line_1
@@ -588,7 +467,7 @@ def address_by_id(request,slug):
                 if state:
                     address.state = state
                     
-                address.is_default = is_default
+                address.is_default = True
                 address.save()
                 message= "Address Updated Successfully"
                 return Response({'message': message}, status=status.HTTP_200_OK)
@@ -599,6 +478,14 @@ def address_by_id(request,slug):
         address_id =slug
         address = Address.objects.get(id=address_id)
         address.delete()
+        if Address.objects.filter(user=request.user).exists():
+            addresses = Address.objects.filter(user=request.user)
+            for old_address in addresses:
+                        old_address.is_default = False
+                        old_address.save()
+            address = Address.objects.filter(user=request.user).first()
+            address.is_default = True
+            address.save()
         return Response({'message': "Deleted Successfully"}, status=status.HTTP_200_OK)
     
 
@@ -618,29 +505,37 @@ def updateCart(request,slug):
         
         if status_:
             if status_ == 'add':
+                if  int(SizeQuantityPrice.objects.get(id=cart.size_quantity_price).quantity) < (int(cart.quantity) +1):
+                    return Response({'message':'Out of Stock'},status=status.HTTP_502_BAD_GATEWAY)
                 cart.quantity = int(cart.quantity) + 1
             elif status_ == 'subtract':
+                if int(cart.quantity) == 1:
+                    cart.delete()
+                    return Response({'message':'Cart Deleted'},status=status.HTTP_200_OK)
                 cart.quantity = int(cart.quantity) - 1
-            
+                
         if qty:
-            
-                cart.quantity = int(qty) 
+            if  int(SizeQuantityPrice.objects.get(id=cart.size_quantity_price).quantity) < (int(qty)):
+                    return Response({'message':'Out of Stock'},status=status.HTTP_502_BAD_GATEWAY)
+                
+            cart.quantity = int(qty) 
             # if status_ == 'subtract':
-        cart.save()
-        cart.mrp = product.mrp
-        cart.sub_total = round((float(cart.quantity)*float(cart.mrp)),2)
             
-            # if product.discount == True:
-            #     cart.discount_price = product.discounted_price
-            #     cart.discount_percentage = product.discount_percentage
-            #     cart.total_price =round((float(qty)*float(cart.discount_price)),2)   
         
+        cart.save()
+        
+        cart.sub_total = round((float(cart.quantity)*float(cart.mrp)),2)
+        cart.save()
+
+        if cart.discount_on_price != 0:
+                cart.total_price =round(float(cart.sub_total)-(float(cart.quantity)*float(cart.discount_on_price)),2)   
+        else:
+            cart.total_price = round((float(cart.quantity)*float(cart.mrp)),2)
+            
         if sqp_id:
             sqp = SizeQuantityPrice.objects.get(id=sqp_id)
             cart.size_quantity_price = sqp
-        # if selected_color:
-        #     cart.color = selected_color
-            
+        
         cart.save()
         return Response({'message':'Cart is Updated'},status=status.HTTP_200_OK)
 
@@ -666,19 +561,24 @@ def Add_Cart(request,slug):
         
         
         
-        # if pro.discount == True:
-        #     discount_on_price = round(float(pro.price) - float(pro.discounted_price),2)
-        #     total_price =round((float(qty)*float(pro.discounted_price)),2)
+        if pro.discount == True:
+            discount_on_price = round(float(pro.mrp) - float(pro.discounted_price),2)
             
-        # else: 
-        #     discount_on_price = 0
-        
+            total_price =round((float(qty)*float(pro.discounted_price)),2)
+            
+        else: 
+            discount_on_price = 0
+            total_price=sub_total
 
         
-        if Cart.objects.filter(user=request.user,product=pro).exists():
+        if Cart.objects.filter(user=request.user,product=pro,size_quantity_price =size_quantity_price ).exists():
             return Response({'Message':'Already In Cart'},status=status.HTTP_208_ALREADY_REPORTED)
-        cart_item = Cart.objects.create(user=user,product=pro,quantity=qty,size_quantity_price=size_quantity_price,mrp=pro.mrp ,sub_total=sub_total)
         
+        if int(size_quantity_price.quantity) > int(qty):
+            
+            cart_item = Cart.objects.create(user=user,product=pro,quantity=qty,size_quantity_price=size_quantity_price,mrp=pro.mrp,total_price=total_price ,sub_total=sub_total,discount_on_price=discount_on_price)
+        else:
+            return Response({'message':'Out of Stock'},status=status.HTTP_502_BAD_GATEWAY)
         
         cart_item.save()
     
@@ -730,14 +630,24 @@ def show_Cart(request):
                 if code and DiscountCoupon.objects.filter(code=code).exists():
                         
                     discountcoupon=DiscountCoupon.objects.get(code=code)
-                    if discountcoupon.end_date > timezone.now():
-                        coupon = 'active'
-                    else: 
+                    if not Order.objects.filter(customer_email = request.user.email).exists():
+                        
+                        if discountcoupon.end_date > timezone.now():
+                            coupon = 'active'
+                            coupon_message = 'Successfully Applied'
+                        else: 
+                            coupon_message = 'Coupon in expire'
+                            coupon = 'deactive'
+                    else:
+                        coupon_message = 'Coupon Already Applied'
                         coupon = 'deactive'
 
                 else:
+                    coupon_message = 'No coupon'
                     coupon = 'deactive'
             else:
+                coupon_message = 'No coupon'
+
                 coupon = 'deactive'
             
             products_list =[ ]
@@ -751,12 +661,12 @@ def show_Cart(request):
                     mrp_price = round((mrp_price + (float(item.product.mrp)*int(item.quantity))),2)
                     
                     
-                    sub_total = round(float(item.sub_total)+ sub_total, 2)
-                    # if item.discount_on_price:
-                    #     discount_on_price = discount_on_price + round((float(item.discount_on_price)*int(item.quantity)),2)
+                    sub_total = round(float(item.total_price)+ sub_total, 2)
+                    if item.discount_on_price:
+                        discount_on_price = discount_on_price + round((float(item.discount_on_price)*int(item.quantity)),2)
                     products_list.append({'qty':item.quantity,'cart':CartSerializer(item).data})
             else:
-                return Response({'message':'Cart is Empty'},status=status.HTTP_400_BAD_REQUEST)  
+                return Response({'message':'Cart is Empty'},status=status.HTTP_502_BAD_GATEWAY)  
             
             
             
@@ -766,13 +676,13 @@ def show_Cart(request):
                 if discountcoupon.price:
                     coupon_discount =  float(discountcoupon.price)
 
-                cupon_discount = coupon_discount *sub_total
+                cupon_discount = round(coupon_discount *sub_total,2)
             else:
                 cupon_discount = 0
             
             total_price = round(sub_total + float(deliveryCharges),2)
             if cupon_discount !=0:
-                total_price = sub_total - round(coupon_discount *sub_total,2) 
+                total_price = round(sub_total - round(coupon_discount *sub_total,2) ,2)
 
                 
             cntx={
@@ -784,8 +694,9 @@ def show_Cart(request):
                     'coupon':coupon,
                     'cupon_discount':cupon_discount,
                     'mrp_price':mrp_price,
-                    'discount_on_price':discount_on_price
-
+                    'discount_on_price':discount_on_price,
+                    'coupon_message':coupon_message,
+                    
                 }
 
             
@@ -793,7 +704,7 @@ def show_Cart(request):
         
         
     # except Exception as e:
-    #     return Response({"e":e}, status=status.HTTP_400_BAD_REQUEST)
+    #     return Response({"e":e}, status=status.HTTP_502_BAD_GATEWAY)
             
 @api_view(['DELETE'])
 @authentication_classes([TokenAuthentication])
@@ -814,44 +725,6 @@ def del_cart(request, slug):
 
 
 
-# def order(request):
-#     if not request.user.is_authenticated:
-#         return redirect('signin')
-    
-#     elif not request.user.is_verified :
-#             request.session['signup_email'] = request.user.email
-#             return redirect('otp')
-    
-#     if request.method == 'POST':
-#             user = User.objects.get(id=request.user.id)
-#             address_id = request.data.get('address_id')
-
-#             payment_id = "Generated Using Stripe Here"
-
-#             order = Order.objects.create(
-#                 address_line_1 = address_id.address_line_1,
-#                 address_line_2 = address_id.address_line_2,
-#                 city = address_id.city,
-#                 postal_code = address_id.postal_code,
-#                 country = address_id.country,
-#                 state = address_id.state,
-#                 payment_id = payment_id,
-#             )
-#             order.save()
-
-#             toatl_amount = 0
-#             for item in Cart.objects.filter(user=user):
-#                 order_item = OrderItem.objects.create(product=item.product,quantity=item.quantity,size_quantity_price=item.size_quantity_price)
-#                 order.order_items.add(order_item)
-#                 toatl_amount += item.size_quantity_price.price
-#                 order.save()
-                
-#             return redirect('/')
-    
-#     else:
-#         return render(request,'cart.html',{'title':'Cart'})
-
-
 
 
 paypalrestsdk.configure({
@@ -867,7 +740,10 @@ paypalrestsdk.configure({
 def create_order(request):
         if request.method == 'POST':
             # address_id = request.data.get('address_id')
-           
+            if not request.user.is_verified :
+                return Response({'message':"Email Not verified"},status=status.HTTP_406_NOT_ACCEPTABLE)
+            
+            
             mrp_price = float(request.data.get('mrp_price', 0))
             sub_total = float(request.data.get('sub_total', 0))
             cupon_discount = float(request.data.get('cupon_discount', 0))
@@ -881,7 +757,7 @@ def create_order(request):
             
             # if not address_id:
             #     message='Please Add/select Address'
-            #     return Response({'message':message},status=status.HTTP_400_BAD_REQUEST)
+            #     return Response({'message':message},status=status.HTTP_502_BAD_GATEWAY)
 
             address = Address.objects.get(user = request.user,is_default=True )
             
@@ -912,6 +788,7 @@ def create_order(request):
             order.deliveryCharges = delivery_charges
             order.mrp_price = mrp_price            
             order.sub_total = round(sub_total,2)
+            
             if coupon:
                 order.cupon_discount = round(cupon_discount,2)
                 
@@ -919,8 +796,11 @@ def create_order(request):
             order.save()
             
             for cart in Cart.objects.filter(user=request.user):
-
-
+                sqp = SizeQuantityPrice.objects.get(id=cart.size_quantity_price.id)
+                
+                if int(sqp.quantity) < int(cart.quantity) : 
+                    return Response({'message':'Out Of Stock'},status=status.HTTP_502_BAD_GATEWAY)
+                
                 order_item = OrderItem.objects.create(
                         product = cart.product,
                         quantity = cart.quantity,
@@ -930,18 +810,13 @@ def create_order(request):
                         sub_total=cart.sub_total,
                         sqp_code=cart.size_quantity_price.id,
                     )
-                # if cart.discount_price:
-                #         discount_price = cart.discount_price
-                # if cart.discount_percentage:
-                #         discount_percentage=cart.discount_percentage
-                        
+                
                 order_item.save()
                 order.order_items.add(order_item)
                 order.save()
                 
                 
                 
-                sqp = SizeQuantityPrice.objects.get(id=cart.size_quantity_price.id)
                 sqp.quantity = int(sqp.quantity) - int(cart.quantity)
                 sqp.save()
                 cart.delete()
@@ -949,44 +824,11 @@ def create_order(request):
                 
             send_email_receipt(request,order.id,request.user)
             if payment_type == 'COD':
-                data = placeDelivery(order.id)
-                order.delivery_status= 'Order Processing'
-                order.shipping_details = data
+                placeDelivery(order.id)
+                    
                 return Response({'message':'Order Created'},status=status.HTTP_200_OK)
             
         
-    #     payment = paypalrestsdk.Payment({
-    #         "intent": "sale",
-    #         "payer": {
-    #             "payment_method": "paypal"
-    #         },
-    #         "redirect_urls": {
-    #             "return_url": "http://127.0.0.1:8000/payment/execute/",
-    #             "cancel_url": "http://127.0.0.1:8000/payment/cancel/"
-    #         },
-    #         "transactions": [{
-    #             "amount": {
-    #                 "total": total_price,
-    #                 "currency": "USD"
-    #             },
-    #             "description": "Payment description"
-    #         }]
-    #     })
-        
-    #     if payment.create():
-    #         request.session['paypal_payment_id'] = payment.id
-    #         order.payment_id = payment.id
-    #         order.save()
-    #         for link in payment.links:
-    #             if link.method == "REDIRECT":
-    #                 redirect_url = str(link.href)
-    #                 return redirect(redirect_url)
-    #     else:
-    #         messages.error(request,"Payment Canceled")
-    #         return render(request, 'payment_error.html')
-    # except Exception as e : 
-    #     return Response({'message':e},status=status.HTTP_400_BAD_REQUEST)     
-
 
 
 
@@ -994,8 +836,17 @@ def create_order(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])   
 def order_detail(request,slug):
-    order =OrderserSerializer(Order.objects.get(id=slug)).data
+    order = Order.objects.get(id=slug)
+    
+    if order.delivery_status != 'Cancel':
+        trackorder(order.airwaybilno)
+    
+    order =OrderserSerializer(order).data
     return Response({'order':order},status=status.HTTP_200_OK)
+
+
+
+
 
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
@@ -1092,7 +943,6 @@ def payment_cancel(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])    
 def contactus(request):
-    if request.method == 'POST':
         first_name = request.data.get('first_name')
         last_name = request.data.get('last_name')
         email = request.data.get('email')
@@ -1214,7 +1064,7 @@ def Update_Profile(request):
          
          if User.objects.filter(phone=contact).exists():
                 message = 'Phone numeber is already registered !!'
-                return Response({"message":"Mobile Number Already Register"},status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message":"Mobile Number Already Register"},status=status.HTTP_502_BAD_GATEWAY)
 
          if first_name:
             user.first_name = first_name
@@ -1230,7 +1080,7 @@ def Update_Profile(request):
          if new_email:
                 if User.objects.filter(email=new_email).exists():
                     message='Email Alrady Registered !!'
-                    return Response({'message':message},status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'message':message},status=status.HTTP_502_BAD_GATEWAY)
                 
                 user.email = new_email
                 user.is_verified = False
@@ -1242,8 +1092,7 @@ def Update_Profile(request):
          return Response({'message':"Profile Updated"},status=status.HTTP_200_OK)
 
     
-          
-         
+
 
 
 
@@ -1253,24 +1102,36 @@ def Update_Profile(request):
 def return_product(request):
      
      if request.method == 'POST':
-            order_id = request.GET.get('id')
+            order_id = request.data.get('id')
             issue = request.data.get('issue')
             feedback =request.data.get('feedback')
+            products =request.data.get('products')
+            
+            
             order = Order.objects.get(id =order_id)
             
             if ReturnOrders.objects.filter(order = order).exists():
                 message = "Return Order Already Initiated !!"
-                return Response({'message':message},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message':message},status=status.HTTP_502_BAD_GATEWAY)
             else:
-                 order.order_return = True
-                 order.delivery_status = 'Cancel'
-                 order.save()
-                 ReturnOrders.objects.create(
-                      order =order,
-                      issue=issue,
-                      feedback =feedback
-                 ).save()
-                 messages.success(request,"Return Order Initiated !!")
-                 return redirect('userprofile')
+                 if order.delivery_status  in ['Order Processing','Delivered','Canceled' , 'Order Return']:
+                    
+                    ReturnOrders.objects.create(
+                        order =order,
+                        issue=issue,
+                        feedback =feedback
+                    ).save()
+                    
+                    message="Return Order Initiated !!"
+                    if order.delivery_status == 'Order Processing':
+                        cancelDelivery(order.airwaybilno,order.id)
+                        order.order_cancel = True
+                        order.delivery_status = 'Canceled'
+                        order.save()
+                    
+                    if  order.delivery_status == ['Delivered','Order Return']:
+                        returnDeliveryOrder(order_id,products)
+                    return Response({'message':message},status=status.HTTP_200_OK) 
 
-     return render(request,'user_profile/return_product.html',{'title':'Return Product','order':order})
+                 else:
+                     return Response({'message':"cant't cancel Order Now."},status=status.HTTP_502_BAD_GATEWAY)

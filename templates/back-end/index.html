@@ -30,7 +30,7 @@
                                     <div class="media static-top-widget">
                                         <div class="media-body p-0">
                                             <span class="m-0"> Orders Processing</span>
-                                            <h4 class="mb-0 counter">{{order_count}}
+                                            <h4 class="mb-0 counter">{{order_processing}}
                                                
                                             </h4>
                                         </div>
@@ -47,8 +47,8 @@
                                 <div class="custome-4-bg b-r-4 card-body">
                                     <div class="media static-top-widget">
                                         <div class="media-body p-0">
-                                            <span class="m-0">New Orders</span>
-                                            <h4 class="mb-0 counter">{{orders|length}}
+                                            <span class="m-0">Return Orders</span>
+                                            <h4 class="mb-0 counter">{{order_cancel}}
                                              
                                             </h4>
                                         </div>
@@ -87,12 +87,17 @@
 
 
                         <!-- Earning chart star-->
-                        <div class="col-xl-12">
+                        <div class="col-xl-6">
                             <div class="card o-hidden card-hover">
                                 <div class="card-header border-0 pb-1">
                                     <div class="card-header-title">
                                         <h4>Revenue Report</h4>
                                     </div>
+                                </div>
+                                <div class="container d-flex">
+                                    <a onclick="fetchAndDrawChart('daily')" class="btn btn-primary m-2">Daily</a>
+                                    <a onclick="fetchAndDrawChart('week')" class="btn btn-primary m-2">Weekly</a>
+                                    <a onclick="fetchAndDrawChart('month')" class="btn btn-primary m-2">Monthly</a>
                                 </div>
                                 <div class="card-body p-0">
                                     <div id="report">
@@ -102,6 +107,27 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-xl-6">
+                            <div class="card o-hidden card-hover">
+                                <div class="card-header border-0 pb-1">
+                                    <div class="card-header-title">
+                                        <h4>Order Distribution by State</h4>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-body p-0">
+                                    <div id="piechart">
+                                        {% comment %} <canvas id="myChart" style="width:100%;max-width:"></canvas> {% endcomment %}
+                                        <canvas id="orderStatePieChart" width="400" height="400"></canvas>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+    
+
                         <!-- Earning chart  end-->
 
 
@@ -352,7 +378,7 @@
                 if (this.checked) {
                 // Define the URL to navigate to
                 const id = document.getElementById('hiddenid').value;
-                const url = `/dashboard/todolist?CHECKED=TRUE&id=${id}`;
+                const url = `/todolist?CHECKED=TRUE&id=${id}`;
 
                 // Navigate to the URL
                 window.location.href = url;
@@ -363,46 +389,107 @@
         
     
         <script>
-                    // Fetch revenue data from backend
-                    fetch("/revenue-data")
+            function fetchAndDrawChart(interval) {
+                console.log(`Fetching data for ${interval}`);
+                fetch(`/revenue-data?interval=${interval}`)
                     .then(response => response.json())
                     .then(data => {
-                      const xValues = data.map(item => Object.keys(item)[0]);
-                      const yValues = data.map(item => Object.values(item)[0]);
-    console.log(xValues,yValues)
-    new Chart("myChart", {
-      type: "line",
-      data: {
-        labels: xValues,
-        datasets: [
-          {
-            label: "Revenue",
-
-            fill: true,
-            lineTension: 0,
-            backgroundColor: "#b45665", // Set the desired background color
-            borderColor: "#5e131f",
-            data: yValues
-          }
-        ]
-      },
-      options: {
-        legend: { display: false },
-        scales: {
-          yAxes: [{ ticks: { min: 0, max: 100 } }]
-        }
-      }
-    });
-  })
-  .catch(error => {
-    console.error("Error fetching revenue data:", error);
-  });
-
-                  
-
+                        const xValues = data.map(item => Object.keys(item)[0]);
+                        const yValues = data.map(item => Object.values(item)[0]);
+                        console.log(xValues, yValues);
+                        drawChart(xValues, yValues, interval);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching revenue data:", error);
+                    });
+            }
+        
+            function drawChart(xValues, yValues, interval) {
+                const xLabels = interval === 'daily' ? xValues : [];
+                new Chart("myChart", {
+                    type: "line",
+                    data: {
+                        labels: xLabels,
+                        datasets: [
+                            {
+                                label: "Revenue",
+                                fill: true,
+                                lineTension: 0,
+                                backgroundColor: "#b45665",
+                                borderColor: "#5e131f",
+                                data: yValues
+                            }
+                        ]
+                    },
+                    options: {
+                        legend: { display: false },
+                        scales: {
+                            yAxes: [{ ticks: { min: 0, max: 100 } }],
+                            xAxes: [{
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    tooltipFormat: 'MMM D',
+                                    displayFormats: {
+                                        day: 'MMM D'
+                                    }
+                                },
+                                display: interval === 'daily'
+                            }]
+                        }
+                    }
+                });
+            }
         </script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        
 
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const orderStatesData = {{ order_states|safe }};
+                const totalOrders = orderStatesData.reduce((total, item) => total + item.order_count, 0);
+                const labels = orderStatesData.map(item => `${item.state} (${item.order_count} orders)`);
+                const data = orderStatesData.map(item => item.order_count);
+        
+                const ctx = document.getElementById('orderStatePieChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                '#FF6384',
+                                '#36A2EB',
+                                '#FFCE56',
+                                // Add more colors as needed
+                            ],
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        tooltips: {
+                            callbacks: {
+                                label: function (tooltipItem, data) {
+                                    return data.labels[tooltipItem.index];
+                                },
+                            },
+                        },
+                        title: {
+                            display: true,
+                            text: `Total Orders: ${totalOrders}`,
+                            fontSize: 16,
+                        },
+                    },
+                });
+            });
+        </script>
+        
+        
+        
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
                 
             {% endblock content %}
        

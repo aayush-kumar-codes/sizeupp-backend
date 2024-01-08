@@ -117,7 +117,7 @@ class Product(models.Model):
     color_family = models.ForeignKey(ColourFamily,on_delete=models.CASCADE,null=True, blank=True)
     color = models.CharField(max_length=400, null=True, blank=True)
     
-    mrp = models.FloatField(max_length=400,null=True,blank=True)
+    mrp = models.FloatField(null=True, blank=True)
 
     subsubcategory = models.ForeignKey(ProductSubSubCategory,on_delete=models.CASCADE,null=True,blank=True)
     

@@ -10,7 +10,7 @@ urlpatterns = [
     #API for category list
     path('category-details',cat_list,name="cat_list"),
     path('discount-events',discountevents),
-
+    path('discount-coupons',discount_coupon),
 
 
     path('review_post',review_post,name="review_post"),

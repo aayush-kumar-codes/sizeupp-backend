@@ -4,6 +4,7 @@ import functions
 urlpatterns = [
     path('', views.dashboard,name="dashboard"),
     path('signin', views.signin,name="dashboard_signin"),
+    path('logout', views.logout_user,name="logout"),
     path('products',views.Products_dashboard,name="products_dashboard"),
     path('media_dashboard',views.media_dashboard,name="media_dashboard"),
     path('scrolling-banner-images',views.scrolling_banner_images,name="scrolling_banner_images"),
@@ -52,7 +53,7 @@ urlpatterns = [
 
     path('pos/',views.pos,name='pos'),
     path('support-tickets/',views.support_tickets,name='support_tickets'),
-    path('todolist/',views.todoList_crud,name='todoList_crud'),
+    path('todolist',views.todoList_crud,name='todoList_crud'),
     path('revenue-data',views.revenue_data,name="revenue-data"),
 
     path('return-orders/',views.return_orders_lst,name="return_order_list"),

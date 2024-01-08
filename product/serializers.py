@@ -27,6 +27,12 @@ class subcategory_serializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ColourFamilySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ColourFamily
+        fields = '__all__'
+        
+        
 
 
 
@@ -49,7 +55,7 @@ class product_serializer(serializers.ModelSerializer):
     subsubcategory = subsubcategory_serializer()
     sqp = SizeQuantityPriceSerializer(many=True, read_only=True)
     images = ProductImagesSerializer(many=True, read_only=True, source='productimages_set')  # Assuming 'productimages_set' is the related name
-    color_family = ColourFamily()
+    color_family = ColourFamilySerializer()
     class Meta:
         model = Product
         fields = "__all__"
@@ -67,12 +73,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         
 
 
-class ColourFamilySerializer(serializers.ModelSerializer):
+
+class DiscountCouponSerializers(serializers.ModelSerializer):
     class Meta:
-        model = ColourFamily
+        model = DiscountCoupon
         fields = '__all__'
-        
-        
 
 class DiscountEventsSerialize(serializers.ModelSerializer):
     subsubcategory_products = serializers.SerializerMethodField()

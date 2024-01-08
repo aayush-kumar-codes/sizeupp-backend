@@ -1,6 +1,8 @@
+from django.shortcuts import render
+from django.db.models import Count
 import random
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from authentication.models import *
 from product.models import *
 from django.contrib import messages
@@ -9,13 +11,13 @@ from django.forms import formset_factory
 from .models import *
 from product.forms import *
 from django.db.models import Sum, Count
-from taggit.models import Tag
-from taggit.utils import parse_tags
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.db.models.functions import TruncMonth
 from  .export  import export_products_to_excel
-
+import json
+from django.db.models import Q
+from django.core.serializers.json import DjangoJSONEncoder
 
 
 def dashboard(request):
@@ -33,9 +35,15 @@ def dashboard(request):
 
 
       try:
-            revenue = round(Order.objects.filter(order_cancel=False).aggregate(total_revenue=Sum('payment_amount'))['total_revenue'],2)
+            revenue = round(Order.objects.filter(order_cancel=False,order_return=False).aggregate(total_revenue=Sum('payment_amount'))['total_revenue'],2)
+
+      
       except:
             revenue = 0
+      # revenue_data = Order.objects.filter(order_cancel=False,order_return = False).values('created_at').annotate(revenue=Sum('payment_amount')).order_by('created_at')
+            
+      #             # Convert the queryset to JSON
+      # revenue_data = json.dumps(list(revenue_data), cls=DjangoJSONEncoder)
       
       top_selling_products = Product.objects.annotate(
       order_count=Count('orderitem__product'),
@@ -53,8 +61,15 @@ def dashboard(request):
 
 
       orders = Order.objects.filter(delivery_status='Order Processing')[::-1][0:6]
-      order_count =Order.objects.filter(order_cancel=False).count()
-
+      order_processing =Order.objects.filter(order_cancel=False,order_return = False).count()
+      order_cancel_or_return = Order.objects.filter(Q(order_cancel=True) | Q(order_return=True)).count()
+      order_states = (
+        Order.objects
+        .values('state')
+        .annotate(order_count=Count('state'))
+        .order_by('-order_count')
+    )
+      order_states_json = json.dumps(list(order_states))
 
       
       cntx={
@@ -64,13 +79,18 @@ def dashboard(request):
             'orders':orders,
             'products':products,
             'users':users,
-            'order_count':order_count,
+            'order_processing':order_processing,
+            'order_cancel':order_cancel_or_return,
+            # 'revenue_data':revenue_data,
             'todolist':TodoList.objects.filter(checked =False)[::-1],
-            'top_selling_products_list':top_selling_products_list
+            'top_selling_products_list':top_selling_products_list,
+            'order_states':order_states_json
       }
       return render(request, 'back-end/index.html', cntx)
 
-
+def logout_user(request):
+      logout(request)
+      return redirect('dashboard_signin')
 
 def signin(request):
       if request.user.is_superuser:
@@ -420,9 +440,9 @@ def addproduct_crud(request,id):
                   color =  request.POST.get('color',None)
                   occasion = request.POST.get('occasion')
                   price = request.POST.get('price')
-                  discount =  request.POST.get('discount',None)
-                  discount_percentage =  request.POST.get('discount_percentage',None)
-                  discounted_price =  request.POST.get('update_discounted_price',None)
+                  discount =  request.POST.get('discount',False)
+                  discount_percentage =  request.POST.get('discount_percentage',0)
+                  discounted_price =  request.POST.get('update_discounted_price',0)
                   gender = request.POST.get('gender')
 
                   meta_tags = request.POST.get('meta_tags',None)
@@ -437,16 +457,16 @@ def addproduct_crud(request,id):
                   product.Washcare=Washcare
                   product.occasion=occasion
                   product.name = product_name
-                  product.gender =gender
+                  # product.gender =gender
                   product.category = ProductCategory.objects.get(id=category_id)
                   product.subcategory =ProductSubCategory.objects.get(id=subcategory_id)
                   product.color_family = ColourFamily.objects.get(name=colour_family)
                   product.cf = cf
                   product.mrp = price
                   product.discount=discount
-                  if discount_percentage != None:
+                  if discount_percentage != 'None':
                         product.discount_percentage=discount_percentage
-                  if discounted_price !=None:
+                  if discounted_price !='None':
                         product.discounted_price=discounted_price
                   product.meta_tags = meta_tags
                   product.meta_description=meta_description
@@ -454,25 +474,26 @@ def addproduct_crud(request,id):
                   
                   product.save()
       
-                  for i in product.sqp.all():
-                       i.delete()
+                  # for i in product.sqp.all():
+                  #      i.delete()
+                  
+                  product.save()
                         
-                        
-                  sqp_list =request.session['sqp_list']
-                  for i  in sqp_list:
-                        sqp =SizeQuantityPrice.objects.create(size=i['size'])
-                        sqp.id = i['id']
-                        sqp.ean_code = i['ean_code']
-                        sqp.quantity = i['quantity']
-                        sqp.inches=i['inches']
-                        sqp.centimeter = i['centimeter']
-                        sqp.length = i['length']
-                        sqp.width = i['width']
-                        sqp.height = i['height']
-                        sqp.weight = i['weight']
-                        sqp.save()
-                        product.sqp.add(sqp)
-                        product.save()
+                  # sqp_list =request.session['sqp_list']
+                  # for i  in sqp_list:
+                  #       sqp =SizeQuantityPrice.objects.create(size=i['size'])
+                  #       sqp.id = i['id']
+                  #       sqp.ean_code = i['ean_code']
+                  #       sqp.quantity = i['quantity']
+                  #       sqp.inches=i['inches']
+                  #       # sqp.centimeter = i['centimeter']
+                  #       sqp.length = i['length']
+                  #       sqp.width = i['width']
+                  #       sqp.height = i['height']
+                  #       sqp.weight = i['weight']
+                  #       sqp.save()
+                  #       product.sqp.add(sqp)
+                  #       product.save()
                         
                         
                   try :
@@ -1283,31 +1304,6 @@ def todoList_crud(request):
 
       
 
-def revenue_data(request):
-      if not request.user.is_authenticated:
-            return redirect('dashboard')
-    
-      if not request.user.is_superuser:
-         messages.error(request,"Not Allowed")
-         return redirect('dashboard')
-      
-
-      monthly_revenue = (
-      Order.objects
-      .filter(order_cancel=False)
-      .annotate(month=TruncMonth('created_at'))
-      .values('month')
-      .annotate(revenue=Sum('payment_amount'))
-      .order_by('month')
-      )
-
-      # Create a list of dictionaries for the monthly revenue as floats
-      revenue_list = [
-      {month['month'].strftime('%B'): float(month['revenue'])}
-      for month in monthly_revenue
-      ]
-      return JsonResponse(revenue_list,safe=False)
-
 def scrolling_banner_images(request):
       if request.method == 'POST':
             img = request.FILES.get('img')
@@ -1356,7 +1352,7 @@ def return_orders_lst(request):
 import pandas as pd
 
 def export_orders_to_excel(filename='orders_data.xlsx'):
-    orders = Order.objects.all()
+    orders = Order.objects.filter(order_cancel=False,order_return =False)
     
     data = {
         'Created At': [],
@@ -1390,7 +1386,7 @@ def export_orders_to_excel(filename='orders_data.xlsx'):
         'Expected Date': [],
         'Order Cancel': [],
         'Order Return': [],
-        'Shipping Details': [],
+      #   'Shipping Details': [],
         'Coupon': [],
         'MRP Price': [],
         'Subtotal': [],
@@ -1408,10 +1404,10 @@ def export_orders_to_excel(filename='orders_data.xlsx'):
             data['Product Name'].append(order_item.product.name)
             data['Article Id'].append(order_item.sqp_code)
             data['Size'].append(order_item.size)
-            data['color'].append(order_item.color)
-            data['mrp'].append(order_item.mrp)
-            data['quantity'].append(order_item.quantity)
-            data['sub_total'].append(order_item.sub_total)
+            data['Color'].append(order_item.color)
+            data['MRP'].append(order_item.mrp)
+            data['Quantity'].append(order_item.quantity)
+            data['Product Total'].append(order_item.sub_total)
       
             data['Customer Name'].append(order.customer_name)
             data['Customer Email'].append(order.customer_email)
@@ -1432,7 +1428,7 @@ def export_orders_to_excel(filename='orders_data.xlsx'):
             data['Dispatch Label URL'].append(order.dispatch_label_url)
             data['Order Cancel'].append(order.order_cancel)
             data['Order Return'].append(order.order_return)
-            data['Shipping Details'].append(order.shipping_details)
+            # data['Shipping Details'].append(order.shipping_message)
             data['Coupon'].append(order.coupon)
             data['MRP Price'].append(order.mrp_price)
             data['Subtotal'].append(order.sub_total)
@@ -1459,3 +1455,49 @@ def export_orders(request):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth, TruncWeek, TruncDay
+from django.shortcuts import redirect
+
+   
+
+@require_GET
+def revenue_data(request):
+    if not request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if not request.user.is_superuser:
+        messages.error(request, "Not Allowed")
+        return redirect('dashboard')
+
+    interval = request.GET.get('interval', 'monthly')
+
+    if interval == 'monthly':
+        time_interval = TruncMonth('created_at')
+    elif interval == 'weekly':
+        time_interval = TruncWeek('created_at')
+    elif interval == 'daily':
+        time_interval = TruncDay('created_at')
+    else:
+        # Default to monthly if an invalid interval is provided
+        time_interval = TruncMonth('created_at')
+
+    revenue_data = (
+        Order.objects
+        .filter(order_cancel=False)
+        .annotate(interval=time_interval)
+        .values('interval')
+        .annotate(revenue=Sum('payment_amount'))
+        .order_by('interval')
+    )
+
+    # Create a list of dictionaries for the revenue data as floats
+    revenue_list = [
+        {entry['interval'].strftime('%B %Y'): float(entry['revenue'])}
+        for entry in revenue_data
+    ]
+    return JsonResponse(revenue_list, safe=False)

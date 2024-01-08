@@ -54,9 +54,9 @@ class Cart(models.Model):
     
     mrp = models.CharField(max_length=10,null=True,blank=True)
     
-    # discount_on_price = models.CharField(max_length=10,null=True,blank=True)
+    discount_on_price = models.CharField(max_length=10,null=True,blank=True)
     sub_total = models.CharField(max_length=10,null=True,blank=True)
-    # total_price =models.CharField(max_length=400,null=True,blank=True)
+    total_price =models.CharField(max_length=400,null=True,blank=True)
     
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
@@ -64,7 +64,7 @@ class Cart(models.Model):
 
 
     class Meta:
-        unique_together = ('user', 'product')
+        unique_together = ('user', 'product','size_quantity_price')
 
 
 
@@ -122,10 +122,15 @@ class Order(models.Model):
 
     delivery_status_choices = (
         ('Order Processing', 'Order Processing'),
-        ('In Production', 'In Production'),
-        ('Shipping','Shipping'),
+        ('Packed', 'Packed'),
+        ('Shipped','Shipped'),
+        ('In-Transit','In-Transit'),
+        ('Out For Delivery','Out For Delivery'),
         ('Delivered','Delivered'),
-        ('Cancel','Cancel')
+
+
+        ('Order Return','Order Return'),        
+        ('Canceled','Canceled')
         
     )
     coupon = models.CharField(max_length=15,null=True,blank=True)
@@ -142,15 +147,15 @@ class Order(models.Model):
     delivery_status = models.CharField(max_length=20, choices=delivery_status_choices, default='Order Processing')
     airwaybilno =models.CharField(max_length=100,null=True,blank=True)
     courier =models.CharField(max_length=100,null=True,blank=True)
-    dispatch_label_url =models.CharField(max_length=100,null=True,blank=True)
+    dispatch_label_url =models.CharField(max_length=300,null=True,blank=True)
     
     expected_date = models.DateField(blank=True,null=True)
     order_cancel = models.BooleanField(default=False)
     order_return = models.BooleanField(default=False)
-    
-    shipping_details = models.TextField(blank=True, null=True)
+    instaship_success = models.CharField(max_length= 500,blank=True, null=True)
+    shipping_message = models.TextField(blank=True, null=True)
     def __str__(self):
-        return str(self.payment_status) + '  '+str(self.id) + '  ' + str(self.payment_amount)
+        return str(self.id) 
     
     def save(self, *args, **kwargs):
         if not str(self.id).startswith("SZ-"):

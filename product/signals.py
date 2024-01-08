@@ -104,6 +104,10 @@ from django.dispatch import receiver
 from django.db import transaction
 import pandas as pd
 from product.models import ExcelFile, Product, ProductCategory, ProductSubCategory, ProductSubSubCategory, ColourFamily, SizeQuantityPrice
+# from transformers import AutoTokenizer, AutoModelForCausalLM
+# tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
+# model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
+
 
 @receiver(post_save, sender=ExcelFile)
 def handle_excel_file_upload(sender, instance, created, **kwargs):
@@ -151,7 +155,7 @@ def handle_excel_file_upload(sender, instance, created, **kwargs):
                     product.subcategory = subcategory
                     product.subsubcategory = subsubcategory
                     
-                    colour_family, _ = ColourFamily.objects.get_or_create(name=var['Color Family'])
+                    colour_family, _ = ColourFamily.objects.get_or_create(name=str(var['Color Family']).upper())
                     product.color_family = colour_family
 
                     product.save()

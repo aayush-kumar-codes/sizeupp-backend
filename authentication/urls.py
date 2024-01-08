@@ -9,7 +9,7 @@ urlpatterns = [
     path('validate-token',views.validate_token,name="validate_token"),
     path('auth/signup', views.signup,name="signup"),
     path('auth/signin', views.signin,name="signin"),
-    path('auth/logout', views.logout_view,name="logout"),
+    path('auth/logout', views.logout_view),
     
 
     # path('auth/forgot_password',views.forgot_password,name="forgot_password"),

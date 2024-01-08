@@ -71,7 +71,7 @@ class TodoList(models.Model):
         return self.name    
 
 class ReturnOrders(models.Model):
-    order = models.ForeignKey(Order,on_delete=models.CASCADE)
+    order = models.OneToOneField(Order,on_delete=models.CASCADE)
     issue = models.CharField(max_length=100)
     feedback =models.TextField(null=True,blank=True)
     created = models.DateTimeField(auto_now_add=True)
