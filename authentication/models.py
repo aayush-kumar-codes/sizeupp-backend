@@ -130,7 +130,7 @@ class Order(models.Model):
 
 
         ('Order Return','Order Return'),        
-        ('Canceled','Canceled')
+        ('Cancelled','Cancelled')
         
     )
     coupon = models.CharField(max_length=15,null=True,blank=True)
@@ -145,6 +145,8 @@ class Order(models.Model):
     discount_percentage = models.DecimalField(max_digits=1000000,decimal_places=2,null=True, blank=True)  
     
     delivery_status = models.CharField(max_length=20, choices=delivery_status_choices, default='Order Processing')
+    
+    
     airwaybilno =models.CharField(max_length=100,null=True,blank=True)
     courier =models.CharField(max_length=100,null=True,blank=True)
     dispatch_label_url =models.CharField(max_length=300,null=True,blank=True)
@@ -152,7 +154,7 @@ class Order(models.Model):
     expected_date = models.DateField(blank=True,null=True)
     order_cancel = models.BooleanField(default=False)
     order_return = models.BooleanField(default=False)
-    instaship_success = models.CharField(max_length= 500,blank=True, null=True)
+    instaship_delivery_status = models.CharField(max_length= 500,blank=True, null=True)
     shipping_message = models.TextField(blank=True, null=True)
     def __str__(self):
         return str(self.id) 

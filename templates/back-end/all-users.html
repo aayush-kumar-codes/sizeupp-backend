@@ -11,6 +11,12 @@
                                 <div class="card-body">
                                     <div class="title-header option-title">
                                         <h5>All Users</h5>
+                                        <form method="POST" action="{% url 'promotional' %}">
+                                            {% csrf_token %}
+                                            <input class="px-2 py-1" placeholder="Enter promotional discount" name="percentage"  />
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </form>
+
                                         <form class="d-inline-flex">
                                             <a href="{% url 'users_list' %}?slug=Add" class="align-items-center btn btn-theme d-flex">
                                                 <i data-feather="plus"></i>Add New

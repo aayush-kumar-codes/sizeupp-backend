@@ -1501,3 +1501,20 @@ def revenue_data(request):
         for entry in revenue_data
     ]
     return JsonResponse(revenue_list, safe=False)
+
+
+from authentication.smsgateway import *
+
+def promotional(request):
+      if request.method == 'POST':
+            percentage = request.POST.get("percentage")
+            users = User.objects.all()
+            for i in users:
+                  if i.is_verified:
+                        smsGateway("promotional",user=i,percentage=percentage)
+            
+      return redirect("users_list")
+
+
+
+

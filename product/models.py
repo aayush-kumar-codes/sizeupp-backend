@@ -154,9 +154,9 @@ class ProductImages(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def image_upload_path(instance, filename):
-        gender_folder = 'Men' if instance.products.gender == 'Men' else 'Women'
-        product_folder = f"{instance.products.id}_{instance.products.color.upper()}"
-        return f'media/product/{gender_folder}/{product_folder}/{filename}'
+        gender_folder = 'MEN' if instance.products.category == 'MEN' else 'WOMEN'
+        product_folder = f"{instance.products.id}_{instance.products.color.upper().replace(' ', '')}_"
+        return f'products/{gender_folder}/{product_folder}/{filename}'
 
     img = models.ImageField(upload_to=image_upload_path)
 

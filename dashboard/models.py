@@ -73,7 +73,11 @@ class TodoList(models.Model):
 class ReturnOrders(models.Model):
     order = models.OneToOneField(Order,on_delete=models.CASCADE)
     issue = models.CharField(max_length=100)
-    feedback =models.TextField(null=True,blank=True)
+    customer_name = models.CharField(max_length=100,null=True,blank=True)
+    bank_name =models.CharField(max_length=100,null=True,blank=True)
+    ifsc =models.CharField(max_length=15,null=True,blank=True)
+    account_no =models.CharField(max_length=100,null=True,blank=True)
+    order_item = models.ManyToManyField(OrderItem)
     created = models.DateTimeField(auto_now_add=True)
 
 class GiftVaoucher(models.Model):

@@ -17,7 +17,7 @@ MESSAGE_TAGS = {
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-a-o+(dp£3=2sc!o9o#!y£j3)+c^9z+rz!2pqb£%w05nme=t*=^'
 DEBUG = True
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*','localhost']
 
 INSTALLED_APPS = [
     # 'material',
@@ -78,6 +78,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://*",  # Also, add the scheme for consistency
     # Add other allowed origins as needed with the correct scheme
 ]
+
+
 CORS_ALLOW_ALL_ORIGINS = True  # Set this to False to use CORS_ALLOWED_ORIGINS
 
 CORS_ALLOW_HEADERS = [
@@ -100,6 +102,7 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

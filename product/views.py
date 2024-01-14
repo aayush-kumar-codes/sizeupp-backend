@@ -17,9 +17,9 @@ from rest_framework.decorators import api_view, permission_classes,authenticatio
 from rest_framework.response import Response
 from rest_framework import status
 import random
-import nltk
-from nltk.tokenize import word_tokenize
-nltk.download('punkt')
+# import nltk
+# from nltk.tokenize import word_tokenize
+# nltk.download('punkt')
 import spacy
 from spacy.matcher import PhraseMatcher
 from django.db.models import Q

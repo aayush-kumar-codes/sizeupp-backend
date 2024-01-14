@@ -57,10 +57,10 @@ urlpatterns = [
     path('revenue-data',views.revenue_data,name="revenue-data"),
 
     path('return-orders/',views.return_orders_lst,name="return_order_list"),
-    path('download-order-history',views.export_orders,name='export_orders')
+    path('download-order-history',views.export_orders,name='export_orders'),
 
 
-
+    path('promotional-message',views.promotional,name='promotional')
 
 
 ]

@@ -28,12 +28,13 @@ from django.shortcuts import render, redirect
 from taggit.models import Tag
 from rest_framework.authtoken.models import Token
 import requests
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.authentication import TokenAuthentication
 from .serializer import *
 from SizeUpp import settings
 from datetime import datetime
 from .deliveryApi import *
+from .smsgateway import *
 
 @api_view(['GET'])
 def banner_scrolling(request):
@@ -203,6 +204,10 @@ def signup(request):
 
             # send_welcome_email(user)
             token, created = Token.objects.get_or_create(user=user)
+            
+            # send otp to mobile
+            smsGateway("account created",user=user)
+            
             # send_welcome_email(user)
             return Response({
                         'message': 'Login successful.',
@@ -314,6 +319,7 @@ def otp(request):
                 user.save()
                 # send opt to email
                 send_email_otp(user=user,otp=otp)
+                smsGateway("register otp",user = user,otp= otp)
                 return Response({'message': 'OTP sent on Email','user_email':user.email}, status=status.HTTP_200_OK)
             # return Response({'message': 'OTP Already sent on Email','user_email':user.email}, status=status.HTTP_200_OK)
 
@@ -354,6 +360,7 @@ def otp_forgot_pass(request):
                 user.save()
                 # send opt to email
                 send_email_otp(user=user,otp=otp)
+                smsGateway("register otp",user = user,otp = otp)
                 message= 'OTP sent on email'
                 return Response({'message': message}, status=status.HTTP_200_OK)
 
@@ -574,7 +581,7 @@ def Add_Cart(request,slug):
         if Cart.objects.filter(user=request.user,product=pro,size_quantity_price =size_quantity_price ).exists():
             return Response({'Message':'Already In Cart'},status=status.HTTP_208_ALREADY_REPORTED)
         
-        if int(size_quantity_price.quantity) > int(qty):
+        if int(size_quantity_price.quantity) >= int(qty):
             
             cart_item = Cart.objects.create(user=user,product=pro,quantity=qty,size_quantity_price=size_quantity_price,mrp=pro.mrp,total_price=total_price ,sub_total=sub_total,discount_on_price=discount_on_price)
         else:
@@ -636,7 +643,7 @@ def show_Cart(request):
                             coupon = 'active'
                             coupon_message = 'Successfully Applied'
                         else: 
-                            coupon_message = 'Coupon in expire'
+                            coupon_message = 'Coupon is expired'
                             coupon = 'deactive'
                     else:
                         coupon_message = 'Coupon Already Applied'
@@ -722,9 +729,81 @@ def del_cart(request, slug):
         cart= CartSerializer(Cart.objects.filter(user=request.user),many=True).data
         return Response({'message':message,'cart':cart},status=status.HTTP_200_OK)
    
+from .ccavutil import encrypt
+# from .Responsehandle import res
+from string import Template
+from pay_ccavenue import CCAvenue
+from django.http import HttpResponse 
 
+def ccavResponseHandler():
+    pass
+def ccavRequestHandler(request,slug):
+            order = Order.objects.get(id=slug)
+            accessCode = 'AVYQ44KL42CE38QYEC'
+            workingKey = '33BA817A5AB3463BFDEF2658EC1ADC0A'
+            p_merchant_id = '3134871'
+            p_order_id = order.id
+            p_currency = 'INR'
+            p_amount = str(order.payment_amount)
+            p_redirect_url = 'https://www.sizeupp.com'
+            p_cancel_url = 'https://www.sizeupp.com'
+            p_language = 'EN'
+            p_billing_name = order.customer_name
+            p_billing_address = order.address_line_1 + order.address_line_2
+            p_billing_city = order.city
+            p_billing_state = order.state
+            p_billing_zip = order.postal_code
+            p_billing_country = 'India'
+            p_billing_tel = order.customer_contact
+            p_billing_email = order.customer_email
+            p_delivery_name = order.customer_name
+            p_delivery_address = order.address_line_1 + order.address_line_2
+            p_delivery_city = order.city
+            p_delivery_state = order.state
+            p_delivery_zip = order.postal_code
+            p_delivery_country ='India'
+            p_delivery_tel =order.customer_contact
+            
+            
+            p_merchant_param1 = ''
+            p_merchant_param2 = ''
+            p_merchant_param3 = ''
+            p_merchant_param4 = ''
+            p_merchant_param5 = ''
+            p_promo_code = ''
+            p_customer_identifier = order.customer_email
+            
+            
 
+            merchant_data='merchant_id='+p_merchant_id+'&'+'order_id='+p_order_id + '&' + "currency=" + p_currency + '&' + 'amount=' + p_amount+'&'+'redirect_url='+p_redirect_url+'&'+'cancel_url='+p_cancel_url+'&'+'language='+p_language+'&'+'billing_name='+p_billing_name+'&'+'billing_address='+p_billing_address+'&'+'billing_city='+p_billing_city+'&'+'billing_state='+p_billing_state+'&'+'billing_zip='+p_billing_zip+'&'+'billing_country='+p_billing_country+'&'+'billing_tel='+p_billing_tel+'&'+'billing_email='+p_billing_email+'&'+'delivery_name='+p_delivery_name+'&'+'delivery_address='+p_delivery_address+'&'+'delivery_city='+p_delivery_city+'&'+'delivery_state='+p_delivery_state+'&'+'delivery_zip='+p_delivery_zip+'&'+'delivery_country='+p_delivery_country+'&'+'delivery_tel='+p_delivery_tel+'&'+'merchant_param1='+p_merchant_param1+'&'+'merchant_param2='+p_merchant_param2+'&'+'merchant_param3='+p_merchant_param3+'&'+'merchant_param4='+p_merchant_param4+'&'+'merchant_param5='+p_merchant_param5+'&'+'promo_code='+p_promo_code+'&'+'customer_identifier='+p_customer_identifier+'&'
+            
+            # mechant_data ='merchant_id=3134871&order_id=SZ-68914&currency=INR&amount=7498.00&redirect_url=https://www.sizeupp.com&cancel_url=https://www.sizeupp.com&language=EN&billing_name=KushalBauskar&billing_address=Sk road, RegencyRegency Anantam&billing_city=Araria&billing_state=Bihar&billing_zip=421202&billing_country=India&billing_tel=8433771414&billing_email=kbauskar07@gmail.com&delivery_name=KushalBauskar&delivery_address=Sk road, RegencyRegency Anantam&delivery_city=Araria&delivery_state=Bihar&delivery_zip=4212'
+            
+            
+            encryption = encrypt(merchant_data,workingKey)
 
+            html = '''\
+                        <html>
+			<head>
+				<title>Sub-merchant checkout page</title>
+				<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+			</head>
+			<body>
+			<form id="nonseamless" method="post" name="redirect" action="https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction" > 
+					<input type="hidden" id="encRequest" name="encRequest" value=$encReq>
+					<input type="hidden" name="access_code" id="access_code" value=$xscode>
+					<script language='javascript'>document.redirect.submit();</script>
+			</form>    
+			</body>
+			</html>
+                        '''
+            fin = Template(html).safe_substitute(encReq=encryption,xscode=accessCode)
+
+            # return Response({'fin':fin},status=status.HTTP_200_OK)
+            return HttpResponse(merchant_data)
+        
+        
+        
 
 
 paypalrestsdk.configure({
@@ -732,6 +811,27 @@ paypalrestsdk.configure({
     "client_id": "AW51S_03IaBs6Kc-6UqkuAqLq9VzcjASJtDuTtwJlHkZAOsjBuZI0qXiobIHptNyDkUFEFEY9mcE0APm",
     "client_secret": "EAq19jPmNnIL07UjfpfXow80Y_luf3Zubd6Z2U74duLn2zuqwS4FR0K-JDK9azi2d2dFy1Ht1SP3IkQ6"
 })
+
+
+
+
+
+
+def payment_gateway():
+    
+    accessCode = 'AVYQ44KL42CE38QYEC'
+    workingKey = '33BA817A5AB3463BFDEF2658EC1ADC0A'
+    MERCHANT_CODE = '3134871'
+    REDIRECT_URL = ''
+    CANCEL_URL = ''
+    ccavenue = CCAvenue()
+    ccavenue = CCAvenue(workingKey, accessCode, MERCHANT_CODE, REDIRECT_URL, CANCEL_URL)
+    encrypt_data = ccavenue.encrypt(form_data)
+
+
+
+
+
 
 
 @api_view(['POST'])
@@ -823,9 +923,11 @@ def create_order(request):
                 
                 
             send_email_receipt(request,order.id,request.user)
+            smsGateway("order placed",order = order,user=request.user)
             if payment_type == 'COD':
                 placeDelivery(order.id)
-                    
+                
+                # return redirect('ccav_request_handler',order.id)
                 return Response({'message':'Order Created'},status=status.HTTP_200_OK)
             
         
@@ -838,8 +940,8 @@ def create_order(request):
 def order_detail(request,slug):
     order = Order.objects.get(id=slug)
     
-    if order.delivery_status != 'Cancel':
-        trackorder(order.airwaybilno)
+    # if order.delivery_status != 'Cancel':
+    #     trackorder(order.airwaybilno)
     
     order =OrderserSerializer(order).data
     return Response({'order':order},status=status.HTTP_200_OK)
@@ -1104,34 +1206,137 @@ def return_product(request):
      if request.method == 'POST':
             order_id = request.data.get('id')
             issue = request.data.get('issue')
-            feedback =request.data.get('feedback')
+            customer_name =request.data.get('customer_name')
+            bank_name =request.data.get('bank_name')
+            ifsc =request.data.get('ifsc')
+            account_no =request.data.get('account_no')
             products =request.data.get('products')
             
             
             order = Order.objects.get(id =order_id)
-            
             if ReturnOrders.objects.filter(order = order).exists():
                 message = "Return Order Already Initiated !!"
                 return Response({'message':message},status=status.HTTP_502_BAD_GATEWAY)
             else:
-                 if order.delivery_status  in ['Order Processing','Delivered','Canceled' , 'Order Return']:
+                 if order.delivery_status in ['Order Processing','Delivered','Cancelled' , 'Order Return']:
                     
-                    ReturnOrders.objects.create(
+                    return_order = ReturnOrders.objects.create(
                         order =order,
                         issue=issue,
-                        feedback =feedback
-                    ).save()
+                        customer_name=customer_name,
+                        bank_name=bank_name,
+                        ifsc=ifsc,
+                        account_no=account_no,
+                    )
+                    return_order.save()
+                    for product in products:
+                        # order_item = OrderItem.objects.get(order=order,product =product)
+                        return_order.order_item.add(product['id'])
+                        return_order.save()
                     
+                        
+                        
                     message="Return Order Initiated !!"
                     if order.delivery_status == 'Order Processing':
                         cancelDelivery(order.airwaybilno,order.id)
                         order.order_cancel = True
-                        order.delivery_status = 'Canceled'
+                        order.delivery_status = 'Cancelled'
                         order.save()
+                        smsGateway("order cancel",order=order,user=request.user)
+                        
                     
-                    if  order.delivery_status == ['Delivered','Order Return']:
+                    if  order.delivery_status == 'Delivered':
+                        
                         returnDeliveryOrder(order_id,products)
+                        smsGateway("order return",order=order,user=request.user)
+                        
                     return Response({'message':message},status=status.HTTP_200_OK) 
 
                  else:
-                     return Response({'message':"cant't cancel Order Now."},status=status.HTTP_502_BAD_GATEWAY)
+                    return Response({'message':"cant't cancel Order Now."},status=status.HTTP_502_BAD_GATEWAY)
+                
+                
+                
+                
+from django.db.models import Sum
+from django.utils import timezone
+from decimal import Decimal
+@api_view(['GET'])
+def SapAllOrders(request):
+    # Get today's date
+    today = timezone.now().date()
+
+    # Query today's orders
+    todays_orders = Order.objects.filter(created_at__date=today)
+
+    # Calculate tax percentage
+    tax_percentage = Decimal('12')
+
+    # Prepare the response data
+    response_data = []
+
+    for order in todays_orders:
+        order_data = {
+            "OrderType": "Online",
+            "DocDate": str(order.created_at.date()),
+            "DeliveryDate": str(order.expected_date),
+            "CustRefNumber": order.id,
+            "AssValue": f"{order.sub_total}",
+            "DeliveryStatus" : f"{order.delivery_status}",
+            "Discount": f"{order.cupon_discount}",
+            "TotTaxAmt": f"{order.payment_amount * (tax_percentage / 100)}",
+            "TotOrderVal": f"{order.payment_amount}",
+            "ShipToAdd": [
+                {
+                    "AddressLineName": order.customer_name,
+                    "AddressLine1": order.address_line_1,
+                    "AddressLine2": order.address_line_2,
+                    "City": order.city,
+                    "ZipCode": order.postal_code,
+                    "State": order.state,
+                    "Country": order.country
+                }
+            ],
+            "BillToAdd": [
+                {
+                    "AddressLineName": order.customer_name,
+                    "AddressLine1": order.address_line_1,
+                    "AddressLine2": order.address_line_2,
+                    "City": order.city,
+                    "ZipCode": order.postal_code,
+                    "State": order.state,
+                    "Country": order.country
+                }
+            ],
+            "LineItem": []
+        }
+
+        # Line items
+        no = 1
+        for item in order.order_items.all():
+            if int(item.sub_total) > 1000:
+                tax = round(item.sub_total * (12/100),2)
+            else:
+                tax = round(item.sub_total * (5/100),2)
+            line_item = {
+                "SrNo": no,
+                "ItemCode": item.product.id,
+                "Quantity": str(item.quantity),
+                "MRP": f"{item.mrp}",
+                "DiscountAmt": 0,
+                "TotAfterDisc": item.sub_total,
+                "COUPDiscAmt": "",
+                "FinalPriceAfterDisc": item.sub_total,
+                "GSTRate": "12",
+                "IgstAmt": "",
+                "CgstAmt": tax/2,
+                "SgstAmt": tax/2,
+                "TotTaxAmt": tax,
+                "TotalLC": round((item.sub_total - tax),2),
+                "TotAmt": item.sub_total    
+            }
+            order_data["LineItem"].append(line_item)
+
+        response_data.append({"Data": [order_data]})
+
+    return Response({'response_data':response_data},status=status.HTTP_200_OK)

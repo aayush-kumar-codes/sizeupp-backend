@@ -610,7 +610,7 @@ def send_email_otp(user, otp):
     message = MIMEMultipart()
     message["From"] = sender_email
     message["To"] = recipient_email
-    message["Subject"] = "SizeUpp One Time Password (OTP)"
+    message["Subject"] = "Sizeupp One Time Password (OTP)"
 
     # Add HTML content to the message
     body = """

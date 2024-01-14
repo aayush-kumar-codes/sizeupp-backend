@@ -59,6 +59,21 @@ urlpatterns = [
     
     
     path('validate-pincode/<slug:slug>',views.validate_pincode,name='validate_pincode'),
-    path('home-scrolling',views.banner_scrolling)
-
+    path('home-scrolling',views.banner_scrolling),
+    
+    
+    
+    path('ccavResponseHandler/', views.ccavResponseHandler, name='ccav_response_handler'),
+    path('ccavRequestHandler/<slug:slug>', views.ccavRequestHandler, name='ccav_request_handler'),
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    #-------------------SAP ------------- API ------------
+    path('sap-all-orders',views.SapAllOrders)
 ]
