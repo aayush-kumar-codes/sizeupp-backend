@@ -20,6 +20,10 @@ urlpatterns = [
 
     path('subcategory',views.subcategory,name='sub_category_dashboard'),
     path('subcategory-crud',views.subcategory_by_id,name='sub_category_crud'),
+    
+    
+    path('sub-subcategory',views.sub_subcategory,name='sub_sub_category_dashboard'),
+    path('sub-subcategory-crud',views.sub_subcategory_by_id,name='sub_sub_category_crud'),
 
 
     path('add-product',views.addproduct,name='addproduct'),
@@ -56,11 +60,11 @@ urlpatterns = [
     path('todolist',views.todoList_crud,name='todoList_crud'),
     path('revenue-data',views.revenue_data,name="revenue-data"),
 
-    path('return-orders/',views.return_orders_lst,name="return_order_list"),
+    path('return-orders',views.return_orders_lst,name="return_order_list"),
     path('download-order-history',views.export_orders,name='export_orders'),
 
 
-    path('promotional-message',views.promotional,name='promotional')
+    path('promotional-message',views.promotional,name='promotional'),
 
 
 ]

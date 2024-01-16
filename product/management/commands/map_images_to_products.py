@@ -1,4 +1,4 @@
-# myapp/management/commands/map_images_to_products.py
+# product/management/commands/map_images_to_products.py
 
 import os
 from django.core.management.base import BaseCommand

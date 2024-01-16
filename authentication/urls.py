@@ -46,8 +46,8 @@ urlpatterns = [
     path('order', views.create_order, name='create_order'),
     path('order/<slug:slug>', views.order_detail, name='order_detail'),
     path('update-order/<slug:slug>', views.update_order, name='update_order'),
-    path('payment/execute', views.payment_execute, name='payment_execute'),
-    path('payment/cancel', views.payment_cancel, name='payment_cancel'),
+    # path('payment/execute', views.payment_execute, name='payment_execute'),
+    # path('payment/cancel', views.payment_cancel, name='payment_cancel'),
 
  
     #Update User Profile
@@ -60,14 +60,15 @@ urlpatterns = [
     
     path('validate-pincode/<slug:slug>',views.validate_pincode,name='validate_pincode'),
     path('home-scrolling',views.banner_scrolling),
-    
+    path('fetch_new_orders',views.fetch_new_orders,name="fetch_new_orders"),
     
     
     path('ccavResponseHandler/', views.ccavResponseHandler, name='ccav_response_handler'),
     path('ccavRequestHandler/<slug:slug>', views.ccavRequestHandler, name='ccav_request_handler'),
     
     
-    
+        path('payment-status',views.payment_status,name='sucess'),
+
     
     
     

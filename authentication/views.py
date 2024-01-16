@@ -28,7 +28,7 @@ from django.shortcuts import render, redirect
 from taggit.models import Tag
 from rest_framework.authtoken.models import Token
 import requests
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from .serializer import *
 from SizeUpp import settings
@@ -206,7 +206,6 @@ def signup(request):
             token, created = Token.objects.get_or_create(user=user)
             
             # send otp to mobile
-            smsGateway("account created",user=user)
             
             # send_welcome_email(user)
             return Response({
@@ -306,6 +305,7 @@ def otp(request):
                 user.save()
 
                 login(request, user)
+                smsGateway("account created",user=user)
                 return Response({'message': 'Verification Done','user_verified':user.is_verified}, status=status.HTTP_200_OK)
                             
             else:
@@ -729,7 +729,7 @@ def del_cart(request, slug):
         cart= CartSerializer(Cart.objects.filter(user=request.user),many=True).data
         return Response({'message':message,'cart':cart},status=status.HTTP_200_OK)
    
-from .ccavutil import encrypt
+from .ccavutil import encrypt,decrypt
 # from .Responsehandle import res
 from string import Template
 from pay_ccavenue import CCAvenue
@@ -817,16 +817,6 @@ paypalrestsdk.configure({
 
 
 
-def payment_gateway():
-    
-    accessCode = 'AVYQ44KL42CE38QYEC'
-    workingKey = '33BA817A5AB3463BFDEF2658EC1ADC0A'
-    MERCHANT_CODE = '3134871'
-    REDIRECT_URL = ''
-    CANCEL_URL = ''
-    ccavenue = CCAvenue()
-    ccavenue = CCAvenue(workingKey, accessCode, MERCHANT_CODE, REDIRECT_URL, CANCEL_URL)
-    encrypt_data = ccavenue.encrypt(form_data)
 
 
 
@@ -922,14 +912,23 @@ def create_order(request):
                 cart.delete()
                 
                 
-            send_email_receipt(request,order.id,request.user)
-            smsGateway("order placed",order = order,user=request.user)
+            # send_email_receipt(request,order.id,request.user)
+            # smsGateway("order placed",order = order,user=request.user)
             if payment_type == 'COD':
                 placeDelivery(order.id)
                 
                 # return redirect('ccav_request_handler',order.id)
                 return Response({'message':'Order Created'},status=status.HTTP_200_OK)
-            
+            if payment_type == 'PPD' : 
+                accessCode = 'AVPI05LA46BF07IPFB' 	
+                workingKey = 'A42FE992D99C6B02D21ED82F3881E384'
+                merchant_data=f'merchant_id=3134871&order_id={str(order.id)}&currency=INR&amount={str(order.payment_amount)}&redirect_url=https://dashboard.sizeupp.com/api/payment-status&cancel_url=https://dashboard.sizeupp.com/api/payment-status&language=en&'
+                # +'&'+'billing_name='+p_billing_name+'&'+'billing_address='+p_billing_address+'&'+'billing_city='+p_billing_city+'&'+'billing_state='+p_billing_state+'&'+'billing_zip='+p_billing_zip+'&'+'billing_country='+p_billing_country+'&'+'billing_tel='+p_billing_tel+'&'+'billing_email='+p_billing_email+'&'+'delivery_name='+p_delivery_name+'&'+'delivery_address='+p_delivery_address+'&'+'delivery_city='+p_delivery_city+'&'+'delivery_state='+p_delivery_state+'&'+'delivery_zip='+p_delivery_zip+'&'+'delivery_country='+p_delivery_country+'&'+'delivery_tel='+p_delivery_tel+'&'+'merchant_param1='+p_merchant_param1+'&'+'merchant_param2='+p_merchant_param2+'&'+'merchant_param3='+p_merchant_param3+'&'+'merchant_param4='+p_merchant_param4+'&'+'merchant_param5='+p_merchant_param5+'&'+'integration_type='+p_integration_type+'&'+'promo_code='+p_promo_code+'&'+'customer_identifier='+p_customer_identifier+'&'
+	
+                encryption = encrypt(merchant_data,workingKey)
+                html = f"https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=3134871&encRequest={encryption}&access_code={accessCode}"
+
+                return Response({"redirect_url" : html},status = status.HTTP_200_OK)
         
 
 
@@ -971,67 +970,6 @@ def update_order(request,uuid):
             
     return Response({'message':'Order Updated'},status=status.HTTP_200_OK)
 
-
-
-def payment_execute(request):
-
-    payment_id = request.session.get('paypal_payment_id')
-    if payment_id is None:
-        return redirect('home')
-    
-    payment = paypalrestsdk.Payment.find(payment_id)
-    if payment:
-        # Payment successful
-        order = Order.objects.filter(payment_id=payment_id)[0]
-        order_items = order.order_items.all()
-        
-        products = []
-        for item in order_items:
-            products.append(item.product)
-            for sqp in item.product.size_quantity_price.all() :
-                sqp = SizeQuantityPrice.objects.get(id = sqp.id)
-                sqp.quantity = int(sqp.quantity) -int(item.quantity) 
-                sqp.save()
-                print(sqp.quantity,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-            
-        serializer = product_serializer(products, many=True)
-
-        order.payment_status = "Completed"
-        order.delivery_status = "Order Processing"
-        order.save()
-
-        Cart.objects.filter(user=request.user).delete()
-
-        cntx={
-                    'payment':payment,
-                    'products':serializer.data
-        }
-        # You can perform any additional actions here, such as updating your database
-        messages.success(request,'Order Placed! You can check on order Track')
-        return render(request, 'user_profile/order-success.html',cntx)
-    else:
-        # Payment failed
-        order = Order.objects.filter(payment_id=payment_id)[0]
-        
-       
-        order.payment_status = "Failed"
-        order.save()
-
-        messages.error(request,'Order Not Placed!')
-
-        return render(request, 'payment_error.html')
-
-def payment_cancel(request):
-    # Payment cancelled
-    order = Order.objects.filter(payment_id=payment_id)[0]
-        
-       
-    order.payment_status = "Failed"
-    order.save()
-    messages.error(request,'Payment Canceled!')
-
-    return render(request, 'payment_cancel.html')
 
 
 
@@ -1340,3 +1278,75 @@ def SapAllOrders(request):
         response_data.append({"Data": [order_data]})
 
     return Response({'response_data':response_data},status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def fetch_new_orders(request):
+    orders = OrderserSerializer(Order.objects.filter(order_cancel=False,order_return=False),many=True).data
+    
+    return Response({'orders':orders},status=status.HTTP_200_OK)
+
+
+
+
+# @api_view(['POST'])
+# @permission_classes(['AllowAny'])
+from django.views.decorators.csrf import csrf_exempt
+from urllib.parse import parse_qs
+import json
+
+@csrf_exempt
+def payment_status(request):
+    if request.method == 'POST':
+        accessCode = 'AVPI05LA46BF07IPFB' 	
+        workingKey = 'A42FE992D99C6B02D21ED82F3881E384'
+        
+        merchant_data = request.POST.get('encResp')
+        order_id = request.POST.get('orderNo')
+        encryption = decrypt(merchant_data,workingKey)
+        parsed_data = parse_qs(encryption)
+        order_id = parsed_data['order_id'][0]
+        tracking_id = parsed_data['tracking_id'][0]
+        order_status = parsed_data['order_status'][0]
+        amount = parsed_data['amount'][0]
+        if order_status =='Success':
+            customer_details = {
+                'order_id': parsed_data.get('order_id', [])[0],
+                'billing_name': parsed_data.get('billing_name', [])[0],
+                'billing_address': parsed_data.get('billing_address', [])[0],
+                'billing_city': parsed_data.get('billing_city', [])[0],
+                'billing_state': parsed_data.get('billing_state', [])[0],
+                'billing_zip': parsed_data.get('billing_zip', [])[0],
+                'billing_country': parsed_data.get('billing_country', [])[0],
+                'billing_tel': parsed_data.get('billing_tel', [])[0],
+                'billing_email': parsed_data.get('billing_email', [])[0],
+                'delivery_name': parsed_data.get('delivery_name', [])[0],
+                'delivery_address': parsed_data.get('delivery_address', [])[0],
+                'delivery_city': parsed_data.get('delivery_city', [])[0],
+                'delivery_state': parsed_data.get('delivery_state', [])[0],
+                'delivery_zip': parsed_data.get('delivery_zip', [])[0],
+                'delivery_country': parsed_data.get('delivery_country', [])[0],
+                'delivery_tel': parsed_data.get('delivery_tel', [])[0]
+            }
+ 
+            customer_json = json.dumps(customer_details, indent=2)
+
+            
+            order =Order.objects.get(id=order_id)
+            order.payment_status = 'Completed'
+            order.payment_id = tracking_id
+            order.payment_amount = float(amount)
+            order.payment_details = customer_json
+            order.save()
+            
+            return redirect(f'https://www.sizeupp.com/payment-success?order_id={order_id}&status={order_status}')
+        else:
+            order =Order.objects.get(id=order_id)
+            order.payment_status = 'Failed'
+            order.payment_id = tracking_id
+            order.save()
+            
+            return redirect(f'https://www.sizeupp.com/payment-failed?order_id={order_id}&status={order_status}&tracking_id={tracking_id}')
+
+
+
+

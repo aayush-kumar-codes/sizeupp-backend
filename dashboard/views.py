@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render,HttpResponseRedirect
 from django.db.models import Count
 import random
 from django.shortcuts import render, redirect
@@ -24,9 +24,6 @@ def dashboard(request):
       if not request.user.is_authenticated:
         return redirect('dashboard_signin')
     
-      if not request.user.is_superuser:
-         messages.error(request,"Not Allowed")
-         return redirect('home')
       
 
 
@@ -205,6 +202,17 @@ def subcategory(request):
     
 
 
+def sub_subcategory(request):
+    if not request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if not request.user.is_superuser :
+            return redirect('dashboard')
+    
+    subcategories = ProductSubCategory.objects.all()[::-1] 
+    return render(request,'back-end/subcategory.html',{'title':'Add Category','subcategories':subcategories})
+    
+
       
 def subcategory_by_id(request):
 
@@ -235,6 +243,77 @@ def subcategory_by_id(request):
          else:
                 categories = ProductCategory.objects.all()[::-1] 
                 return render(request,'back-end/add-new-sub-category.html',{'slug':'Add','categories':categories})
+
+
+    if slug == 'Update':
+        sub_category_id = request.GET.get('id')
+        if request.method =="POST":    
+                name = request.POST.get('sub_category_name')
+                category_name= request.POST.get('category_name')
+
+                subcategory = ProductSubCategory.objects.get(id=sub_category_id)
+               
+                subcategory.category = ProductCategory.objects.get(name=category_name)
+
+                subcategory.name = name
+                subcategory.save()
+                messages.success(request,"Category Updated Successfully")
+                return redirect('sub_category_dashboard')
+        
+        else:
+            subcategory = ProductSubCategory.objects.get(id=sub_category_id)
+            categories = ProductCategory.objects.all()[::-1]
+            return render(request,'back-end/add-new-sub-category.html',{'title':'Update Sub Category','subcategory':subcategory,'categories':categories})
+    
+
+
+
+    elif slug == 'Delete':
+        category_id = request.GET.get('id')
+
+        category = ProductSubCategory.objects.get(id=category_id)
+        category.delete()
+        return redirect('sub_category_dashboard')
+    else:
+         categories = ProductCategory.objects.all()[::-1]
+         subcategories = ProductSubCategory.objects.all()[::-1]
+         return render(request,'back-end/add-new-category.html',{'title':'Update Category','brands':brands,'slug':'Add','categories':categories,'subcategories':subcategories})
+    
+
+
+
+      
+def sub_subcategory_by_id(request):
+
+    if not request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if not request.user.is_superuser :
+            return redirect('dashboard')
+    
+    slug = request.GET.get('slug')
+
+    if slug == 'Add':
+         if request.method =='POST':
+            category_name= request.POST.get('category_name')
+            sub_category_id= request.POST.get('sub_category_name')
+            sub_sub_category_name= request.POST.get('sub_sub_category_name')
+            subcategory = ProductSubCategory.objects.get(id=sub_category_id)
+
+            category = ProductCategory.objects.get(name=category_name)
+
+            if ProductSubSubCategory.objects.filter(name=sub_sub_category_name, subcategory=subcategory,category=category).exists():
+                  pass
+            else:
+                  ProductSubSubCategory.objects.create(name=sub_sub_category_name,subcategory=subcategory,category=category).save()
+                  
+            if request.GET.get('redirect') == 'productadd':
+               return JsonResponse({'message':'done'},safe=True)
+            return redirect('sub_category_dashboard')
+         else:
+                categories = ProductCategory.objects.all()[::-1] 
+                subcategories = ProductSubCategory.objects.all()[::-1]
+                return render(request,'back-end/add-new--sub-sub-category.html',{'slug':'Add','categories':categories,'subcategories':subcategories})
 
 
     if slug == 'Update':
@@ -741,7 +820,7 @@ def order_list(request):
       if not request.user.is_superuser:
          messages.error(request,"Not Allowed")
          return redirect('dashboard')
-      orders = Order.objects.filter(order_cancel=False)[::-1] 
+      orders = Order.objects.filter(order_cancel=False,visited=True)[::-1] 
       return render(request,"back-end/order-list.html",{'title':'order-list','orders':orders})
 
 def order_details(request,slug):
@@ -752,6 +831,8 @@ def order_details(request,slug):
          messages.error(request,"Not Allowed")
          return redirect('dashboard')
       order = Order.objects.get(id=slug)
+      order.visited = True
+      order.save()
       
       return render(request,"back-end/order-detail.html",{'title':'order-list','order':order})
 
@@ -1345,8 +1426,28 @@ def banner_images(request):
 
 
 def return_orders_lst(request):
-      return_orders = ReturnOrders.objects.all()[::-1]
-      return render(request,'back-end/return_order_list.html',{'return_orders':return_orders})
+      slug = request.GET.get('slug')
+      id = request.GET.get('return_order_id')
+      refund_initiate = request.GET.get('refund_initiate')
+      if id:
+            re_order = ReturnOrders.objects.get(id=id)
+            if refund_initiate == 'True':
+                  re_order.refund_initiate =True
+            else:
+                  re_order.refund_initiate = False
+            re_order.save()
+            return  HttpResponseRedirect('return-orders?slug=return_order')
+      
+      return_orders = ReturnOrders.objects.all()
+      if slug =='cancelled_order':
+            return_orders = return_orders.filter(order__order_cancel = True)[::-1]
+            title = 'Cancelled orders'
+            
+      if slug =='return_order':
+            return_orders = return_orders.filter(order__order_return = True)[::-1]
+            title = 'Return orders'
+
+      return render(request,'back-end/return_order_list.html',{'title':title,'return_orders':return_orders,'slug':slug})
 
 
 import pandas as pd
@@ -1514,6 +1615,8 @@ def promotional(request):
                         smsGateway("promotional",user=i,percentage=percentage)
             
       return redirect("users_list")
+
+
 
 
 

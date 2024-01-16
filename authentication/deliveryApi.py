@@ -152,7 +152,7 @@ def placeDelivery(order_id):
             "state": "Maharashtra",
             "postcode": "400072",
             "country": "India",
-            "phone": "9870332657"
+            "phone": "7219795490"
             },
             "rto": {
             "vendor_name": order.customer_name,

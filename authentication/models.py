@@ -117,6 +117,8 @@ class Order(models.Model):
     payment_status = models.CharField(max_length=20, choices=payment_status_choices, default='Pending')
     payment_id = models.CharField(max_length=50, null=True, blank=True)
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    payment_details = models.TextField( null=True, blank=True)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)  
 
@@ -156,6 +158,8 @@ class Order(models.Model):
     order_return = models.BooleanField(default=False)
     instaship_delivery_status = models.CharField(max_length= 500,blank=True, null=True)
     shipping_message = models.TextField(blank=True, null=True)
+    
+    visited = models.BooleanField(default= False)
     def __str__(self):
         return str(self.id) 
     

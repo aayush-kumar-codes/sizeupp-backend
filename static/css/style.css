@@ -3298,14 +3298,14 @@ strong~p {
 }
 
 .alert-success {
-    background-color: rgba(158, 101, 194, 0.8);
-    border-color: rgba(158, 101, 194, 0.9);
+    background-color: rgb(60 131 29 / 80%);
+    border-color: rgb(60 131 29 / 80%);
     color: #fff
 }
 
 .alert-success .progress {
     height: 5px;
-    background-color: #9c61c1;
+    background-color: rgb(60 131 29 / 80%);
     border-radius: 0
 }
 
@@ -46901,8 +46901,8 @@ body[class*="dark-"] .main-white {
     text-align: left;
     -webkit-box-shadow: 0 0 21px 0 rgba(89, 102, 122, 0.1);
     box-shadow: 0 0 21px 0 rgba(89, 102, 122, 0.1);
-    background: linear-gradient(-45deg, #f7a800, #c2ad23, #efe8e0);
-    background-size: 400% 400%;
+    background: linear-gradient(-45deg, #e7e7e7, #1d1e26, #efe8e0);
+        background-size: 400% 400%;
     -webkit-animation: gradient 15s ease infinite;
     animation: gradient 15s ease infinite;
     overflow: hidden

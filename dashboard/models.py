@@ -79,6 +79,9 @@ class ReturnOrders(models.Model):
     account_no =models.CharField(max_length=100,null=True,blank=True)
     order_item = models.ManyToManyField(OrderItem)
     created = models.DateTimeField(auto_now_add=True)
+    refund_initiate = models.BooleanField(default=False)
+
+
 
 class GiftVaoucher(models.Model):
     theme = models.CharField(max_length=50)

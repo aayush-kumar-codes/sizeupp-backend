@@ -10,7 +10,14 @@
                                 <!-- Table Start -->
                                 <div class="card-body">
                                     <div class="title-header option-title">
+                                        {% if slug == 'cancelled_order' %}
+                                        <h5>Cancelled Orders</h5>
+
+                                        {% else %}
                                         <h5>Return Orders</h5>
+                                        {% endif %}
+                                        <input type="text" id="searchInput" class="form-control w-50" style="font-size:15px" placeholder="Search by Order ID">
+
                                     </div>
                                     <div>
                                         <div class="table-responsive">
@@ -49,7 +56,7 @@
                                                                 <span># {{i.id}}</span>
                                                             </div>
                                                         </td>
-                                                        <td>{{i.order.id}}</td>
+                                                        <td id="orderid">{{i.order.id}}</td>
                                                         <td>{{i.order.delivery_status}}</td>
 
                                                         <td>{{i.created}}</td>
@@ -62,11 +69,21 @@
                                                                         <i class="ri-eye-line"></i>
                                                                     </button>
                                                                 </li>
-                                                                {% comment %} <li>
-                                                                    <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#exampleModalToggle">
-                                                                        <i class="ri-delete-bin-line"></i>
+                                                                {% if slug == 'return_order' %}
+
+                                                                 <li>
+                                                                    {% if i.refund_initiate %}
+                                                                    
+                                                                    <a  class="btn btn-success">
+                                                                        Refunded
                                                                     </a>
-                                                                </li> {% endcomment %}
+                                                                    {% else %}
+                                                                    <a href="{% url 'return_order_list' %}?slug=return_order&return_order_id={{i.id}}&refund_initiate=True" class="btn btn-primary">
+                                                                        Initiate Refund
+                                                                    </a>
+                                                                    {% endif %}
+                                                                </li> 
+                                                                {% endif %}
                                                             </ul>
                                                         </td>
                                                     </tr>
@@ -74,7 +91,18 @@
                                                         <div class="modal-dialog modal-dialog-centered" role="document">
                                                             <div class="modal-content">
                                                                 <div class="modal-header">
-                                                                    <h5 class="modal-title" id="exampleModalLongTitle">Return & Cancelled Order Details</h5>
+                                                                    <div class="container">
+                                                                        <h3 class="modal-title" id="exampleModalLongTitle">Return & Cancelled Order Details </h3>
+                                                                        {% if slug == 'return_order' %}
+
+                                                                        {% if i.refund_initiate %}
+                                                                        <h5 style="color:green"><b> Refunded</b></h5>
+
+                                                                        {% else %}
+                                                                        <h5 style="color:red"><b> Refund  Not Initiated</b></h5>
+                                                                        {% endif %}
+                                                                        {% endif %}
+                                                                    </div>
                                                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                                         <span aria-hidden="true">&times;</span>
                                                                     </button>
@@ -218,7 +246,32 @@
                 <!-- Footer End -->
             </div>
 
-                
+            <script>
+                // JavaScript function to filter table rows by order ID
+                function filterTable() {
+                    // Get input value and convert it to lowercase for case-insensitive search
+                    var input = document.getElementById('searchInput').value.toLowerCase();
+                    
+                    // Get the table and table rows
+                    var table = document.getElementById('table_id');
+                    var rows = table.getElementsByTagName('tr');
+            
+                    // Loop through all table rows, starting from index 1 to skip the header row
+                    for (var i = 1; i < rows.length; i++) {
+                        var orderId = rows[i].getElementsByTagName('td')[1].innerText.toLowerCase();
+            
+                        // Check if the current row's order ID contains the input text
+                        if (orderId.includes(input)) {
+                            rows[i].style.display = ''; // Show the row
+                        } else {
+                            rows[i].style.display = 'none'; // Hide the row
+                        }
+                    }
+                }
+            
+                // Attach the filterTable function to the input field's 'input' event
+                document.getElementById('searchInput').addEventListener('input', filterTable);
+            </script>
                    
             <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
             <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>

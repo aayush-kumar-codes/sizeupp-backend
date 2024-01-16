@@ -30,7 +30,7 @@
                                                 </thead>
 
                                                 <tbody>
-                                                    {% for order in orders %}
+                                                {% comment %} {% for order in orders %}
                                                     <tr data-bs-toggle="offcanvas" href="#order-details">
                                                         
 
@@ -66,17 +66,6 @@
                                                                     </a>
                                                                 </li>
 
-                                                                {% comment %} <li>
-                                                                    <a href="javascript:void(0)">
-                                                                        <i class="ri-pencil-line"></i>
-                                                                    </a>
-                                                                </li> {% endcomment %}
-
-                                                                {% comment %} <li>
-                                                                    <a href="{% url  'order_crud' order.id %}?slug=delete" >
-                                                                        <i class="ri-delete-bin-line"></i>
-                                                                    </a>
-                                                                </li> {% endcomment %}
                                                                 <li>
                                                                     <a class="btn btn-sm btn-solid text-white"
                                                                         href="{% url 'invoice' order.id %}">
@@ -87,7 +76,7 @@
                                                         </td>
                                                     </tr>
 
-                                                    {% endfor %}
+                                                    {% endfor %}  {% endcomment %}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -128,5 +117,94 @@
             
                 // Attach the filterTable function to the input field's 'input' event
                 document.getElementById('searchInput').addEventListener('input', filterTable);
+            </script>
+
+
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    // Keep track of processed order IDs
+                    var processedOrderIds = new Set();
+                
+                    function fetchNewOrders() {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('GET', '/api/fetch_new_orders', true); // Replace with the actual URL to fetch new orders
+                        xhr.setRequestHeader('Content-Type', 'application/json');
+                        
+                        xhr.onload = function() {
+                            if (xhr.status === 200) {
+                                var data = JSON.parse(xhr.responseText);
+                                if (data && data.orders) {
+                                    updateOrderTable(data.orders);
+                                }
+                            } else {
+                                console.error('Error fetching new orders:', xhr.statusText);
+                            }
+                        };
+                
+                        xhr.onerror = function() {
+                            console.error('Network error while fetching new orders');
+                        };
+                
+                        xhr.send();
+                    }
+                
+                    function updateOrderTable(newOrders) {
+                        var tbody = document.querySelector('#table_id tbody');
+                        for (var i = 0; i < newOrders.length; i++) {
+                            var order = newOrders[i];
+                
+                            // Check if the order ID is already processed
+                            if (!processedOrderIds.has(order.id)) {
+                                // Add the order ID to the set
+                                processedOrderIds.add(order.id);
+                                var orderDate = new Date(order.created_at);
+                                var formattedDate = orderDate.toLocaleString(); // Adjust the formatting as needed
+                
+                                // Determine the class based on delivery_status
+                                var deliveryStatusClass = '';
+                                if (order.delivery_status === 'Delivered') {
+                                    deliveryStatusClass = 'order-success';
+                                } else if (order.delivery_status === 'Cancelled') {
+                                    deliveryStatusClass = 'order-cancel';
+                                } else {
+                                    deliveryStatusClass = 'order-pending';
+                                }
+                
+                                var rowHtml = `
+                                        <tr data-bs-toggle="offcanvas" href="#order-details">
+                                            <td>${order.id} ${order.visited ? '' : `<span class="${deliveryStatusClass}" style="color:red">(New)</span>`}</td>
+                                            <td>${formattedDate}</td>
+                                            <td>${order.payment_type}</td>
+                                            <td class="${deliveryStatusClass}"><span>${order.delivery_status}</span></td>
+                                            <td>₹${order.payment_amount}</td>
+                                            <td>
+                                                <ul>
+                                                    <li>
+                                                        <a href="/order-details/${order.id}">
+                                                            <i class="ri-eye-line"></i>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="btn btn-sm btn-solid text-white" href="/invoice/${order.id}">
+                                                            View Invoice
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    `;
+
+                                    tbody.insertAdjacentHTML('afterbegin', rowHtml);  // Add new order to the top of the table
+                                    // Add new order to the top of the table
+                            }
+                        }
+                    }
+                
+                    // Fetch new orders every X seconds (adjust the interval as needed)
+                    setInterval(fetchNewOrders, 10000);  // Fetch new orders every 10 seconds
+                });
+                
+                
             </script>
             {% endblock content %}
