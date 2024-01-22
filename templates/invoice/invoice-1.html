@@ -153,13 +153,29 @@
                               <span 
                                 >
                                 {{order.payment_type }}
-                                {% if order.payment_type != 'COD' %}
+
                                 
-                                {{order.payment_id}}
+                                {% if  order.payment_status == 'Failed' %}
+                                
+                                (<span style="color:red">{{order.payment_status}}</span>)
+                                {% else %}
+                                (<span style="color:green">{{order.payment_status}}</span>)
+                                
                                 {% endif %}
                                 
-                               </span
-                              >
+                                </span
+                                >
+                              </li>
+                                <li>
+                                  
+                                <span>
+
+                                  {% if order.payment_type != 'COD' %}
+                                  Transaction Id :
+                                  {{order.payment_id}}
+                                  {% endif %}
+                                  
+                                </span>
                             </li>
                           </ul>
                         </div>

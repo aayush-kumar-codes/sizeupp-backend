@@ -229,7 +229,7 @@ def logout_view(request):
         logout(request)
         return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
     else:
-        return Response({'message': 'User is not authenticated.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'message': 'User is not authenticated.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @csrf_protect
@@ -673,7 +673,7 @@ def show_Cart(request):
                         discount_on_price = discount_on_price + round((float(item.discount_on_price)*int(item.quantity)),2)
                     products_list.append({'qty':item.quantity,'cart':CartSerializer(item).data})
             else:
-                return Response({'message':'Cart is Empty'},status=status.HTTP_502_BAD_GATEWAY)  
+                return Response({'message':'Cart is Empty'},status=status.HTTP_400_BAD_REQUEST)  
             
             
             
@@ -719,9 +719,9 @@ def show_Cart(request):
 def del_cart(request, slug):
     if request.user.is_authenticated:
         
-        product = Product.objects.get(id=slug)
-        if Cart.objects.filter(product=product,user= request.user).exists():
-            cart = Cart.objects.get(product=product,user= request.user)
+        # product = Product.objects.get(id=slug)
+        if Cart.objects.filter(id= slug).exists():
+            cart = Cart.objects.get(id=slug)
             cart.delete()
             message="Deleted"
         else:
@@ -909,24 +909,29 @@ def create_order(request):
                 
                 sqp.quantity = int(sqp.quantity) - int(cart.quantity)
                 sqp.save()
+                
                 cart.delete()
                 
                 
-            # send_email_receipt(request,order.id,request.user)
-            # smsGateway("order placed",order = order,user=request.user)
+            
             if payment_type == 'COD':
                 placeDelivery(order.id)
                 
                 # return redirect('ccav_request_handler',order.id)
                 return Response({'message':'Order Created'},status=status.HTTP_200_OK)
             if payment_type == 'PPD' : 
-                accessCode = 'AVPI05LA46BF07IPFB' 	
-                workingKey = 'A42FE992D99C6B02D21ED82F3881E384'
-                merchant_data=f'merchant_id=3134871&order_id={str(order.id)}&currency=INR&amount={str(order.payment_amount)}&redirect_url=https://dashboard.sizeupp.com/api/payment-status&cancel_url=https://dashboard.sizeupp.com/api/payment-status&language=en&'
-                # +'&'+'billing_name='+p_billing_name+'&'+'billing_address='+p_billing_address+'&'+'billing_city='+p_billing_city+'&'+'billing_state='+p_billing_state+'&'+'billing_zip='+p_billing_zip+'&'+'billing_country='+p_billing_country+'&'+'billing_tel='+p_billing_tel+'&'+'billing_email='+p_billing_email+'&'+'delivery_name='+p_delivery_name+'&'+'delivery_address='+p_delivery_address+'&'+'delivery_city='+p_delivery_city+'&'+'delivery_state='+p_delivery_state+'&'+'delivery_zip='+p_delivery_zip+'&'+'delivery_country='+p_delivery_country+'&'+'delivery_tel='+p_delivery_tel+'&'+'merchant_param1='+p_merchant_param1+'&'+'merchant_param2='+p_merchant_param2+'&'+'merchant_param3='+p_merchant_param3+'&'+'merchant_param4='+p_merchant_param4+'&'+'merchant_param5='+p_merchant_param5+'&'+'integration_type='+p_integration_type+'&'+'promo_code='+p_promo_code+'&'+'customer_identifier='+p_customer_identifier+'&'
+                # accessCode = 'AVYQ44KL42CE38QYEC' 	
+                # workingKey = '33BA817A5AB3463BFDEF2658EC1ADC0A'
+                accessCode = settings.ACCESSCODE	
+                workingKey = settings.WORKINGKEY
+                merchant_data=f'merchant_id=3134871&order_id={str(order.id)}&currency=INR&amount={str(order.payment_amount)}&redirect_url=https://dashboard.sizeupp.com/api/payment-status&cancel_url=https://dashboard.sizeupp.com/api/payment-status&language=en&billing_name={order.customer_name}&billing_address={str(order.address_line_1) + str(order.address_line_2) }&billing_city={order.city}&billing_state={order.state}&billing_zip={order.postal_code}&billing_country={order.country}&billing_tel={order.customer_contact}&billing_email={order.customer_email}'
+                # &delivery_name='+p_delivery_name+'&'+'delivery_address='+p_delivery_address+'&'+'delivery_city='+p_delivery_city+'&'+'delivery_state='+p_delivery_state+'&'+'delivery_zip='+p_delivery_zip+'&'+'delivery_country='+p_delivery_country+'&'+'delivery_tel='+p_delivery_tel+'&'+'merchant_param1='+p_merchant_param1+'&'+'merchant_param2='+p_merchant_param2+'&'+'merchant_param3='+p_merchant_param3+'&'+'merchant_param4='+p_merchant_param4+'&'+'merchant_param5='+p_merchant_param5+'&'+'integration_type='+p_integration_type+'&'+'&'+'customer_identifier='+p_customer_identifier+'&'
+                
+                # if coupon:
+                #     merchant_data = merchant_data + '&promo_code='+ coupon
 	
                 encryption = encrypt(merchant_data,workingKey)
-                html = f"https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=3134871&encRequest={encryption}&access_code={accessCode}"
+                html = f"https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction&merchant_id=3134871&encRequest={encryption}&access_code={accessCode}"
 
                 return Response({"redirect_url" : html},status = status.HTTP_200_OK)
         
@@ -1297,8 +1302,8 @@ import json
 @csrf_exempt
 def payment_status(request):
     if request.method == 'POST':
-        accessCode = 'AVPI05LA46BF07IPFB' 	
-        workingKey = 'A42FE992D99C6B02D21ED82F3881E384'
+        accessCode = settings.ACCESSCODE	
+        workingKey = settings.WORKINGKEY
         
         merchant_data = request.POST.get('encResp')
         order_id = request.POST.get('orderNo')
@@ -1338,11 +1343,18 @@ def payment_status(request):
             order.payment_details = customer_json
             order.save()
             
+
+            placeDelivery(order.id)
+            send_email_receipt(request,order.id,User.objects.get(email=order.customer_email))
+            smsGateway("order placed",order = order,user= User.objects.get(email=order.customer_email))
+            
+            
             return redirect(f'https://www.sizeupp.com/payment-success?order_id={order_id}&status={order_status}')
         else:
             order =Order.objects.get(id=order_id)
             order.payment_status = 'Failed'
             order.payment_id = tracking_id
+            order.delivery_status = 'Cancelled'
             order.save()
             
             return redirect(f'https://www.sizeupp.com/payment-failed?order_id={order_id}&status={order_status}&tracking_id={tracking_id}')

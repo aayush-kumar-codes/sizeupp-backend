@@ -112,6 +112,12 @@ def placeDelivery(order_id):
                 "item_brand": ""
             }
         )
+    
+
+    payment_method = order.payment_type
+    cod_total = "0.00"
+    if payment_method == "COD":
+        cod_total = str(order.payment_amount)
 
  
     payload = {
@@ -121,11 +127,11 @@ def placeDelivery(order_id):
             "tracking_no": "",
             "order_number": order.id,
             "transaction_ref_no": order.id,
-            "payment_method": "COD",
+            "payment_method": payment_method,
             "discount_total": "0.00",
             "cod_shipping_charge": "00.00",
             "invoice_total": str(order.payment_amount),
-            "cod_total": str(order.payment_amount),
+            "cod_total": cod_total,
             "length": "10",
             "breadth": "10",
             "height": "10",
@@ -155,14 +161,14 @@ def placeDelivery(order_id):
             "phone": "7219795490"
             },
             "rto": {
-            "vendor_name": order.customer_name,
-            "address_1": str(order.address_line_1)+ "Do not pick",
-            "address_2": str(order.address_line_2),
-            "city": order.city,
-            "state": order.state,
-            "postcode": order.postal_code,
+            "vendor_name": "Sizeupp",
+            "address_1": "Sizeupp, F-72/73, Solaris 1 Indl Estate",
+            "address_2": "Opp L & T Gate No.6, Saki Vihar Rd, Powai",
+            "city": "Andheri",
+            "state": "Maharashtra",
+            "postcode": "400072",
             "country": "India",
-            "phone": order.customer_contact
+            "phone": "7219795490"
             },
             "gst_details": {
             "gst_number": "",
@@ -275,21 +281,20 @@ def returnDeliveryOrder(order_id,order_items):
         "actual_weight": "0.2",
         "volumetric_weight": "0.50",
         "shipping": {
-            "first_name": order.customer_name,
-            "last_name": "",
-            "address_1": order.address_line_1,
-            "address_2": order.address_line_2,
-            "city": order.city,
-            "state": order.state,
-            "postcode": order.postal_code,
+            "vendor_name": "Sizeupp",
+            "address_1": "Sizeupp, F-72/73, Solaris 1 Indl Estate",
+            "address_2": "Opp L & T Gate No.6, Saki Vihar Rd, Powai",
+            "city": "Andheri",
+            "state": "Maharashtra",
+            "postcode": "400072",
             "country": "India",
-            "phone": order.customer_contact,
-            "cust_email": order.customer_email
+            "phone": "7219795490"
         },
         "line_items": items,
         "pickup": {
-            "vendor_name": order.customer_name,
-            "address_1": str(order.address_line_1) + "Do not pick",
+           "first_name": order.customer_name,
+            "last_name": "",
+            "address_1": str(order.address_line_1),
             "address_2": str(order.address_line_2),
             "city": order.city,
             "state": order.state,

@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-load_dotenv()
+
 from django.contrib.messages import constants as messages
 
 # SECURE_SSL_REDIRECT = True
@@ -52,6 +51,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
+
+PAGE_SIZE=40
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
@@ -202,3 +203,7 @@ LOGOUT_REDIRECT_URL = "/"  # new
 # CELERY_TIMEZONE = 'UTC'
 
 SHIPING_TOKEN = None
+
+
+WORKINGKEY = '33BA817A5AB3463BFDEF2658EC1ADC0A'
+ACCESSCODE = 'AVYQ44KL42CE38QYEC'

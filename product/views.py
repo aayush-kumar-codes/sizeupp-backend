@@ -9,15 +9,15 @@ from django.contrib import messages
 import uuid as main_uuid
 from django.db.models import Q
 from product.serializers import *
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from dashboard.models import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, permission_classes,authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
-import random
-# import nltk
+from rest_framework.pagination import PageNumberPagination
+from django.conf import settings
+
 # from nltk.tokenize import word_tokenize
 # nltk.download('punkt')
 import spacy
@@ -49,7 +49,8 @@ def productfilter(request):
     # prict_lth =request.data.get('prict_lth', None)
     # prict_htl =request.data.get('prict_htl', None)
     
-    
+    paginator = PageNumberPagination()
+    paginator.page_size = settings.PAGE_SIZE
     products = Product.objects.all().order_by('?')
     
     
@@ -169,7 +170,8 @@ def productfilter(request):
         products = products.filter(Q(meta_tags__icontains=search))
     
     
-    pro_list = product_serializer(products, many=True).data
+    result_page = paginator.paginate_queryset(products, request)
+    pro_list = product_serializer(result_page, many=True).data
     if request.user.is_authenticated:
             cart = Cart.objects.filter(user=request.user)
             cart_products = [product_c.product.id for product_c in cart]
@@ -185,7 +187,9 @@ def productfilter(request):
                     pro['wishlist'] = pro_id in wishlist_products
                 
                 
-    return Response({'products': pro_list}, status=status.HTTP_200_OK)
+    # return Response({'products': pro_list[:100]}, status=status.HTTP_200_OK)
+    return paginator.get_paginated_response(pro_list)
+    #return Response({'products': pro_list}, status=status.HTTP_200_OK)
 
 
 
@@ -260,7 +264,16 @@ def product_inside(request,slug):
 
 @api_view(['GET'])
 def allproducts(request):
+    paginator = PageNumberPagination()
+    paginator.page_size = settings.PAGE_SIZE
+    products = Product.objects.all()
+    result_page = paginator.paginate_queryset(products, request)
+    pro_list = product_serializer(result_page, many=True).data
   
+  
+    products = Product.objects.all().order_by('?')
+    pro_list = product_serializer(products, many=True).data
+
     products = Product.objects.all().order_by('?')
     pro_list = product_serializer(products, many=True).data
   
@@ -277,15 +290,16 @@ def allproducts(request):
             if pro_id is not None:
                 pro['cart'] = pro_id in cart_products
                 pro['wishlist'] = pro_id in wishlist_products
+    print("=================")
 
-    return Response(pro_list, status=status.HTTP_200_OK)
+    return paginator.get_paginated_response(pro_list)
 
 
 #Category API
 
 @api_view(['GET'])
 def cat_list(request):
-    
+
     categories = category_serializer(ProductCategory.objects.all().distinct(), many=True).data
     
     for cat in categories:
