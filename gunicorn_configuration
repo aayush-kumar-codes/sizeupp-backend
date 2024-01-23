@@ -1,0 +1,26 @@
+#!/bin/bash
+
+NAME="SizeUpp"  #Django application name
+DIR=/root/sizeupp/sizeupp-backend   #Directory where project is located
+USER=root   #User to run this script as
+GROUP=root  #Group to run this script as
+WORKERS=3     #Number of workers that Gunicorn should spawn
+SOCKFILE=unix:/root/sizeupp/sizeupp-backend/gunicorn.sock   #This socket file will communicate with Nginx 
+DJANGO_SETTINGS_MODULE=SizeUpp.settings   #Which Django setting file should use
+DJANGO_WSGI_MODULE=SizeUpp.wsgi           #Which WSGI file should use
+LOG_LEVEL=debug
+cd $DIR
+source /root/sizeupp/sizeupp-backend/env/bin/activate  #Activate the virtual environment
+export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
+export PYTHONPATH=$DIR:$PYTHONPATH
+
+
+#Command to run the progam under supervisor
+exec /root/sizeupp/sizeupp-backend/env/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
+--name $NAME \
+--workers $WORKERS \
+--user=$USER \
+--group=$GROUP \
+--bind=$SOCKFILE \
+--log-level=$LOG_LEVEL \
+--log-file=-
