@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
+# from django.views.decorators.cache import cache_page
 
 # from nltk.tokenize import word_tokenize
 # nltk.download('punkt')
@@ -34,6 +35,7 @@ from spacy.matcher import PhraseMatcher
 
 
 @api_view(['POST'])
+# @cache_page(1*24*60*60)
 def productfilter(request):
     category = request.data.get('category', None)
     sub_category = request.data.get('sub_category', None)
@@ -51,14 +53,8 @@ def productfilter(request):
     
     paginator = PageNumberPagination()
     paginator.page_size = settings.PAGE_SIZE
-    products = Product.objects.all().order_by('?')
-    
-    
-    
-    
-    
-        
-    
+    products = Product.objects.all()
+
     if category:
         products = products.filter(category__id__in=category)
     
@@ -172,19 +168,19 @@ def productfilter(request):
     
     result_page = paginator.paginate_queryset(products, request)
     pro_list = product_serializer(result_page, many=True).data
-    if request.user.is_authenticated:
-            cart = Cart.objects.filter(user=request.user)
-            cart_products = [product_c.product.id for product_c in cart]
+    # if request.user.is_authenticated:
+    #         cart = Cart.objects.filter(user=request.user)
+    #         cart_products = [product_c.product.id for product_c in cart]
 
-            wishlist = WishList.objects.filter(user=request.user)
-            wishlist_products = [product_i.product.id for product_i in wishlist]
+    #         wishlist = WishList.objects.filter(user=request.user)
+    #         wishlist_products = [product_i.product.id for product_i in wishlist]
 
-            for pro in pro_list:
-                pro_id = pro.get('id', None)
+    #         for pro in pro_list:
+    #             pro_id = pro.get('id', None)
 
-                if pro_id is not None:
-                    pro['cart'] = pro_id in cart_products
-                    pro['wishlist'] = pro_id in wishlist_products
+    #             if pro_id is not None:
+    #                 pro['cart'] = pro_id in cart_products
+    #                 pro['wishlist'] = pro_id in wishlist_products
                 
                 
     # return Response({'products': pro_list[:100]}, status=status.HTTP_200_OK)
@@ -195,49 +191,51 @@ def productfilter(request):
 
 
 @api_view(['GET'])
+# @cache_page(1*24*60*60)
 def product_inside(request,slug):
 
-    sqp_id = request.GET.get('sqp_id',None)
+    # sqp_id = request.GET.get('sqp_id',None)
     
-    if sqp_id !=None:
-        sqp = SizeQuantityPrice.objects.get(id=sqp_id)
+    # if sqp_id !=None:
+    #     sqp = SizeQuantityPrice.objects.get(id=sqp_id)
 
-    else:
-        product = get_object_or_404(Product,id =slug)
-        sqp = product.sqp.first()
+    product = get_object_or_404(Product,id =slug)
+    sqp = product.sqp.first()
 
    
 
 
-    product = get_object_or_404(Product,id =slug)
+    # product = get_object_or_404(Product,id =slug)
 
     pro_serializer = product_serializer(product)
 
     if request.user.is_authenticated:
-        cart = Cart.objects.filter(user=request.user)
-        cart_products = []
+        cart = Cart.objects.filter(user=request.user, product=product).exists()
+        # cart_products = []
+        print(cart,"carttttttttttt")
 
-        wishlist = WishList.objects.filter(user=request.user)
-        wishlist_products = []
+        wishlist = WishList.objects.filter(user=request.user, product=product).exists()
+        # wishlist_products = []
+        print(wishlist,"wishlisttttttttttttt")
 
-        for i in wishlist:
-            wishlist_products.append(i.product.id)
+        # for i in wishlist:
+        #     wishlist_products.append(i.product.id)
 
-        for i in cart:
-            cart_products.append(i.product.id)
+        # for i in cart:
+        #     cart_products.append(i.product.id)
 
-        print(cart_products,"***********************************")
-        print(wishlist_products,"!!!!!!!!!!!!!!!!!!!!!")
+        # print(cart_products,"***********************************")
+        # print(wishlist_products,"!!!!!!!!!!!!!!!!!!!!!")
         
-        if product.id in cart_products:
-            cart =True
-        else:
-            cart= False
+        # if product.id in cart_products:
+        #     cart =True
+        # else:
+        #     cart= False
 
-        if product.id in wishlist_products:
-            wishlist= True
-        else:
-            wishlist= False   
+        # if product.id in wishlist_products:
+        #     wishlist= True
+        # else:
+        #     wishlist= False   
 
     else:
             cart= False
@@ -245,6 +243,7 @@ def product_inside(request,slug):
     
 
     images = ProductImages.objects.filter(products =product)
+    print("SJSJHS: ", images.count())
 
     img_serializer = ProductImagesSerializer(images,many=True)
     
@@ -256,40 +255,41 @@ def product_inside(request,slug):
         'wishlist':wishlist,
         'product_images':img_serializer.data,
         # 'order':order,
-        'reviews':ReviewSerializer(Reviews.objects.filter(product=Product.objects.get(id=slug)),many=True).data,
+        'reviews':ReviewSerializer(product.reviews ,many=True).data,
         'related_products_category':product_serializer(Product.objects.filter(category=product.category),many=True).data,
     }
     return Response(cntx,status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
+# @cache_page(1*24*60*60)
 def allproducts(request):
     paginator = PageNumberPagination()
     paginator.page_size = settings.PAGE_SIZE
     products = Product.objects.all()
     result_page = paginator.paginate_queryset(products, request)
     pro_list = product_serializer(result_page, many=True).data
+
   
-  
-    products = Product.objects.all().order_by('?')
-    pro_list = product_serializer(products, many=True).data
+    # if request.user.is_authenticated:
+    #     user = request.user
+    #     print(user)
+        # cart = Cart.objects.filter(user=request.user)
+        # cart_products = [product_c.product.id for product_c in cart]
+        # cart_products = user.cartproducts.all()
+        # print(cart_products)
 
-    products = Product.objects.all().order_by('?')
-    pro_list = product_serializer(products, many=True).data
-  
-    if request.user.is_authenticated:
-        cart = Cart.objects.filter(user=request.user)
-        cart_products = [product_c.product.id for product_c in cart]
+        # wishlist = WishList.objects.filter(user=request.user)
+        # wishlist_products = [product_i.product.id for product_i in wishlist]
+        # wishlist_products = user.wishlistproducts.all()
+        # print(wishlist_products)
 
-        wishlist = WishList.objects.filter(user=request.user)
-        wishlist_products = [product_i.product.id for product_i in wishlist]
+        # for pro in pro_list:
+        #     pro_id = pro.get('id', None)
 
-        for pro in pro_list:
-            pro_id = pro.get('id', None)
-
-            if pro_id is not None:
-                pro['cart'] = pro_id in cart_products
-                pro['wishlist'] = pro_id in wishlist_products
+        #     if pro_id is not None:
+        #         pro['cart'] = pro_id in cart_products
+        #         pro['wishlist'] = pro_id in wishlist_products
     print("=================")
 
     return paginator.get_paginated_response(pro_list)

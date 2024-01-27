@@ -140,11 +140,11 @@ class Order(models.Model):
     mrp_price = models.FloatField(default=0)
     sub_total = models.FloatField(default=0)
     deliveryCharges = models.IntegerField(validators=[MinValueValidator(0)],null=True, blank=True)
-    cupon_discount = models.DecimalField(max_digits=1000000,decimal_places=2,null=True, blank=True)  
+    cupon_discount = models.DecimalField(max_digits=65,decimal_places=2,null=True, blank=True)  
     
     # discount_on_ = models.FloatField(default=0)
     event =  models.CharField(max_length=400,blank=True, null=True)
-    discount_percentage = models.DecimalField(max_digits=1000000,decimal_places=2,null=True, blank=True)  
+    discount_percentage = models.DecimalField(max_digits=65,decimal_places=2,null=True, blank=True)  
     
     delivery_status = models.CharField(max_length=20, choices=delivery_status_choices, default='Order Processing')
     

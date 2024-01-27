@@ -18,6 +18,13 @@ admin.site.register(ColourFamily)
 admin.site.register(ExcelFile)
 admin.site.register(DiscountCoupon)
 admin.site.register(DiscountEvents)
-admin.site.register(ProductImages)
+# admin.site.register(ProductImages)
 admin.site.register(DeliveryCharges)
 # admin.site.register(DiscountEvents)
+
+class ProductImagesAdmin(admin.ModelAdmin):
+    list_display = ['products', 'id']
+    search_fields = ['products__id', 'id']
+
+
+admin.site.register(ProductImages, ProductImagesAdmin)

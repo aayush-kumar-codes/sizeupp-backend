@@ -145,10 +145,21 @@ WSGI_APPLICATION = 'SizeUpp.wsgi.application'
 
 user = os.environ.get('USER')
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / "db.sqlite3",
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / "db.sqlite3",
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'sizeupp_db',
+        'USER': 'root',
+        'PASSWORD': 'Passwd345#$%',
+        'HOST':'localhost',
+        'PORT':'3306',
     }
 }
 
@@ -207,3 +218,16 @@ SHIPING_TOKEN = None
 
 WORKINGKEY = '33BA817A5AB3463BFDEF2658EC1ADC0A'
 ACCESSCODE = 'AVYQ44KL42CE38QYEC'
+
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
+#         "LOCATION": "127.0.0.1:11211",
+#         "OPTIONS": {
+#             "no_delay": True,
+#             "ignore_exc": True,
+#             "max_pool_size": 4,
+#             "use_pooling": True,
+#         },
+#     }
+# }
