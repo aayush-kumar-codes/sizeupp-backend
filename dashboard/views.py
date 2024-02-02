@@ -18,6 +18,7 @@ from  .export  import export_products_to_excel
 import json
 from django.db.models import Q
 from django.core.serializers.json import DjangoJSONEncoder
+from django.utils import timezone
 
 
 def dashboard(request):
@@ -1396,7 +1397,22 @@ def scrolling_banner_images(request):
             banner = HomeBannerScrolling.objects.get(id=img_id)
             banner.delete()
       banner_imgs =  HomeBannerScrolling.objects.all()
-      return render(request,'back-end/scrolling-banner.html',{'title':'Scolling Banner','banner_imgs':banner_imgs})
+      scroller_texts = HomeTextScrolling.objects.all()
+      return render(request,'back-end/scrolling-banner.html',{'title':'Scolling Banner','banner_imgs':banner_imgs,'scroller_texts':scroller_texts})
+
+def scrolling_text(request):
+      if request.method == 'POST':
+            text = request.POST['stext']
+
+            scroller_text =  HomeTextScrolling.objects.create(text=text)
+            scroller_text.start_date = timezone.now()
+            scroller_text.save()
+      if request.GET.get('delete'):
+            text_id = request.GET.get('text_id')
+            scroller_text = HomeTextScrolling.objects.get(id=text_id)
+            scroller_text.delete()
+      scroller_texts = HomeTextScrolling.objects.all()
+      return render(request, 'back-end/scrolling-banner.html', {'title':'Scrolling Text','scroller_texts':scroller_texts})
 
 def banner_images(request):
       if not request.user.is_authenticated:

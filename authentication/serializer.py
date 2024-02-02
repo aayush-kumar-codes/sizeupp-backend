@@ -2,11 +2,16 @@ from rest_framework import serializers
 from .models import Cart
 from authentication.models import *
 from product.serializers import *
-from dashboard.models import  HomeBannerScrolling
+from dashboard.models import  HomeBannerScrolling, HomeTextScrolling
 
 class HomeBannerScrollingSerializer(serializers.ModelSerializer):
     class Meta:
         model = HomeBannerScrolling
+        fields = '__all__'
+
+class HomeTextScrollingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomeTextScrolling
         fields = '__all__'
 
 class UserSerialize(serializers.ModelSerializer):

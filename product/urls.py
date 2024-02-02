@@ -21,5 +21,8 @@ urlpatterns = [
 
     path('upload',upload,name='upload_file'),
     path('colorfamily',colorfamily,name="colorfamily"),
+    path('getdata', getdata, name="getdata"),
+    path('getstate', getstate, name="getstatelist"),
+    path('getcities/<str:state_code>', getcities, name="getcitieslist"),
     
     ]

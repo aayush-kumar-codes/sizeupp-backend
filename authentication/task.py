@@ -7,7 +7,7 @@ from django.db.models import Q
 def update_order_statuses():
 
     orders = Order.objects.filter(Q(airwaybilno__isnull=False) & Q(order_cancel=False) & ~Q(delivery_status='Delivered'))
-
+    print(orders)
     for order in orders:
         try:
             url = f'https://api.instashipin.com/api/ilogix/track?api_key=656593e12539bf4b675d593c&airwaybilno={order.airwaybilno}'
@@ -15,10 +15,14 @@ def update_order_statuses():
 
             if response.status_code == 200:
                 data = response.json()
+                print(data)
                 success = data['data']['success']
+                print(success,"00000")
 
                 if success:
-                    shipment_latest_status= data['data']['response'][0]['shipment_latest_status']
+                    print("=============")
+                    shipment_latest_status= data['data']['response'][0]['scan_detail'][-1]['status']
+                    print("-----------")
                     if shipment_latest_status == 'PENDING PICKUP':
                         order.delivery_status='Order Processing'
                         
@@ -40,13 +44,16 @@ def update_order_statuses():
                     if shipment_latest_status == 'PICKUP CANCELLED':
                         order.delivery_status='Cancelled'
                         
-                    order.instaship_delivery_status =data['data']['response'][0]['shipment_latest_status']
+                    order.instaship_delivery_status =data['data']['response'][0]['scan_detail'][-1]['status']
                     try:
                         order.expected_date = data['data']['response'][0]['edd']
                     except:
                         pass
 
                     order.save()
+                    print(order.id)
+                    print(order.delivery_status)
+                    print(order.instaship_delivery_status)
 
         except Exception as e:
             print(f"Error updating order status for order {order.id}: {e}")

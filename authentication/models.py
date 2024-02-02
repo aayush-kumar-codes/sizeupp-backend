@@ -119,8 +119,8 @@ class Order(models.Model):
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     payment_details = models.TextField( null=True, blank=True)
-    created_at = models.DateTimeField(auto_now=True)
-    updated_at = models.DateTimeField(auto_now_add=True)  
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  
 
     delivery_status_choices = (
         ('Order Processing', 'Order Processing'),

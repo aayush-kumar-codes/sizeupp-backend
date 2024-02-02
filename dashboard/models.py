@@ -22,6 +22,10 @@ class HomeBannerScrolling(models.Model):
     start_date = models.DateTimeField(null=True,blank=True) 
 
 
+class HomeTextScrolling(models.Model):
+    text = models.CharField(max_length=1000)
+    start_date = models.DateTimeField(null=True,blank=True)
+
     
 
 
